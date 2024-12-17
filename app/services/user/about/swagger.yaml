@@ -1,0 +1,43 @@
+info:
+  version: 1.0.0
+  title: User API
+  description: |
+    API Для управлениея ползователями
+    Основыне функции: Регистрация, получение информации, обновление
+host: localhost:8080
+schemes:
+- http
+paths:
+  /sing-up:
+    post:
+      summary: Регистрация
+      description: |
+        Эндпойнт заносит данные о новом пользователе в базу, отправляет
+        код поддтверждения на указанный email, и возвращает 
+      operationId: singUp
+      requestBody:
+        description: Регистрация нового пользователя
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                email:
+                  $ref: "#/components/schemas/email"
+                password:
+                  $ref: "#/components/schemas/password"
+                discription:
+                  $ref: "#/components/schemas/user_discription"
+                age:
+                  $ref: "#/components/schemas/user_age"
+
+      responses:
+        "200":
+
+components:
+  schemas:
+    username:
+      type: string
