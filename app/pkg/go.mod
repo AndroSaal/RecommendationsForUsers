@@ -1,4 +1,4 @@
-module gitverse.ru/sbertech_hr/Go-internship-drewn/app/pkg
+module github.com/RecommendationsForUsers/app/pkg
 
 go 1.23.1
 
