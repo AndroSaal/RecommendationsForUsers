@@ -1,4 +1,4 @@
-module github.com/AndroSaal/RecommendationsForUser/app/pkg
+module github.com/AndroSaal/RecommendationsForUsers/app/pkg
 
 go 1.23.1
 
