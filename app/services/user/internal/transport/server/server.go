@@ -2,8 +2,13 @@ package server
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
+
+	"github.com/AndroSaal/RecommendationsForUsers/app/pkg/config"
 )
+
+const megabyte = 1 << 20
 
 type Server struct {
 	Server *http.Server
@@ -11,11 +16,11 @@ type Server struct {
 }
 
 // создание нового сервера
-func NewServer(cfg config.SrvConfig, handler http.Handler, logger *slog.Logger) (*Server, error) {
+func NewServer(cfg config.ServerConfig, handler http.Handler, logger *slog.Logger) (*Server, error) {
 	server := &http.Server{
 		Addr:           ":" + cfg.Port,
 		Handler:        handler,
-		MaxHeaderBytes: 1 << 20, // 1MB
+		MaxHeaderBytes: megabyte,
 		ReadTimeout:    cfg.Timeout,
 		WriteTimeout:   cfg.Timeout,
 	}
