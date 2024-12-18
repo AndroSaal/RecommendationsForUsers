@@ -16,7 +16,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       # KAFKA_CREATE_TOPICS: "example:2:1"
   zookeeper:
-    # conteiner_name: zookeeper-0
+    # conteiner_name: zookeeper
     image: zookeeper
     ports:
       - 2181:2181
