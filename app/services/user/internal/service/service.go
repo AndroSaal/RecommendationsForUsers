@@ -7,15 +7,16 @@ type Service interface {
 	UserGetter
 	UserUpdator
 	MailSender
+	CodeVerifactor
 }
 
 type UserCreator interface {
-	CreateUser(user entities.UserInfo) (entities.UserId, error)
+	CreateUser(user entities.UserInfo) (int, error)
 }
 
 type UserGetter interface {
-	GetUserById(id entities.UserId) (entities.UserInfo, error)
-	GetUserByEmail(email entities.Email) (entities.UserInfo, error)
+	GetUserById(id int) (entities.UserInfo, error)
+	GetUserByEmail(email string) (entities.UserInfo, error)
 }
 
 type UserUpdator interface {
@@ -23,7 +24,11 @@ type UserUpdator interface {
 }
 
 type MailSender interface {
-	SendMail(email *entities.Email) error
+	SendMail(email *string) error
+}
+
+type CodeVerifactor interface {
+	VerifyCode(userId int, code string) (bool, error)
 }
 
 func NewService() Service {

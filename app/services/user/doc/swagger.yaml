@@ -28,7 +28,11 @@ paths:
         "200":
           description: Успешно добавлен новый пользователь, письмо отправлено
           schema:
-            $ref: "#/definitions/userId"
+            type: object
+            description: Используется для возвращения ошибки пользователю
+            properties:
+             userId:
+              $ref: "#/definitions/userId"
         "400":
           description: Неверный формат запроса или его параметры.
           schema:
@@ -40,7 +44,7 @@ paths:
         "500":
           description: Ошибка сервера.
 
-  /sing-up/{userId}:
+  /sing-up/userId:
     get:
       summary: Получение информации
       description: |
@@ -50,7 +54,7 @@ paths:
         - name: userId
           type: integer
           description: Уникальный id пользователя
-          in: path
+          in: query
           required: true
       responses:
         "200":
@@ -68,7 +72,7 @@ paths:
         "500":
           description: Ошибка сервера.
 
-  /sing-up/{email}/:
+  /sing-up/email:
     get:
       summary: Получение информации
       description: |
@@ -79,7 +83,7 @@ paths:
           type: string
           description: Email пользователя.
           maxLength: 64
-          in: path
+          in: query
           required: true
       responses:
         "200":

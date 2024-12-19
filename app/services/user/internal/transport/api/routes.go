@@ -7,19 +7,30 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 	singUp := router.Group("/sign-up")
 	{
+		// /sing-up
 		singUp.POST("", h.singUpUser)
-	}
 
-	userId := singUp.Group("/:id")
-	{
-		userId.GET("", h.getUserById)
-		userId.PATCH("/edit", h.editUser)
-		userId.PUT("/verify-email", h.verifyEmail)
-	}
+		// /sing-up/userId
+		userId := singUp.Group("/userId")
+		{
+			userId.GET("", h.getUserById)
+		}
 
-	email := singUp.Group("/:email")
-	{
-		email.GET("/", h.getUserByEmail)
+		// /sing-up/email
+		email := singUp.Group("/email")
+		{
+			email.GET("", h.getUserByEmail)
+		}
+
+		// /sing-up/{userId}
+		userIdInPath := singUp.Group("/:userId")
+		{
+			// /sing-up/{userId}/verify-email
+			userIdInPath.PUT("/verify-email", h.verifyEmail)
+
+			// /sing-up/{userId}/edit
+			userIdInPath.PATCH("/edit", h.editUser)
+		}
 	}
 
 	return router

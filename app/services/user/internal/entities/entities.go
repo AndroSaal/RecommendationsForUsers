@@ -7,14 +7,6 @@ import (
 	"strconv"
 )
 
-type UserId int
-
-type Username string
-
-type Email string
-
-type Password string
-
 type UserDiscription string
 
 type UserInterest string
@@ -46,54 +38,54 @@ const (
 )
 
 type UserInfo struct {
-	// UsrId         UserId          `json:"userId"`
-	Usrname       Username        `json:"username"`
-	Email         Email           `json:"email" binding:"required"`
-	Password      Password        `json:"password" binding:"required"`
+	UsrId         int             `json:"userId"`
+	Usrname       string          `json:"username"`
+	Email         string          `json:"email" binding:"required"`
+	Password      string          `json:"password" binding:"required"`
 	UsrDesc       UserDiscription `json:"discription" binding:"required"`
 	UserInterests UserInterests   `json:"interests" binding:"required"`
 	UsrAge        UserAge         `json:"age" binding:"required"`
 }
 
-func (ui *UserId) ValidateUserId() error {
+func ValidateUserId(usrId int) error {
 
-	if *ui < 0 {
+	if usrId < 0 {
 		return errors.New("invalid user id: can`t be less 0")
 	}
 
 	return nil
 }
 
-func (u *Username) ValidateUsername() error {
+func ValidateUsername(username string) error {
 	re := regexp.MustCompile(`a-zA-Z0-9_`)
 
-	if !re.MatchString(string(*u)) {
+	if !re.MatchString(string(username)) {
 		return errors.New("invalid username: does not math regexp")
 	}
-	if len(*u) > usernameMaxLenth {
+	if len(username) > usernameMaxLenth {
 		return errors.New("invalid username: too long, max length is " + strconv.Itoa(usernameMaxLenth))
 	}
 
-	if len(*u) < usernameMinLenth {
+	if len(username) < usernameMinLenth {
 		return errors.New("invalid username: too short, min length is " + strconv.Itoa(usernameMinLenth))
 	}
 
 	return nil
 }
 
-func (e *Email) ValidateEmail() error {
+func ValidateEmail(email string) error {
 	re := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-z]{2,}$`)
 
-	if !re.MatchString(string(*e)) {
+	if !re.MatchString(email) {
 		return errors.New("invalid email: does not math regexp")
 	}
 
-	if len(*e) > emailMaxLenth {
+	if len(email) > emailMaxLenth {
 		return fmt.Errorf("%s %s", "invalid email: too long, max length is",
 			strconv.Itoa(emailMaxLenth))
 	}
 
-	if len(*e) < emailMinLenth {
+	if len(email) < emailMinLenth {
 		return fmt.Errorf("%s %s", "invalid email: too short, min length is",
 			strconv.Itoa(emailMinLenth))
 	}
@@ -101,24 +93,35 @@ func (e *Email) ValidateEmail() error {
 	return nil
 }
 
-func (p *Password) ValidatePassword() error {
+func ValidatePassword(password string) error {
 	re := regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9!@#$%^&()*]+$`)
 
-	if !re.MatchString(string(*p)) {
+	if !re.MatchString(string(password)) {
 		return errors.New("invalid password: does not math regexp")
 	}
 
-	if len(*p) > passwordMaxLenth {
+	if len(password) > passwordMaxLenth {
 		return fmt.Errorf("%s %s", "invalid password: too long, max length is",
 			strconv.Itoa(passwordMaxLenth))
 	}
 
-	if len(*p) < passwordMinLenth {
+	if len(password) < passwordMinLenth {
 		return fmt.Errorf("%s %s", "invalid password: too short, min length is",
 			strconv.Itoa(passwordMinLenth))
 	}
 
 	return nil
+}
+
+func ValidateCode(code string) error {
+	re := regexp.MustCompile(`^[0-9]{5}$`)
+
+	if !re.MatchString(code) {
+		return errors.New("invalid code: does not match regexp")
+	}
+
+	return nil
+
 }
 
 func (ud *UserDiscription) ValidateUserDiscription() error {
@@ -162,15 +165,15 @@ func (a *UserAge) ValidateUserAge() error {
 
 func (inf *UserInfo) ValidateUserInfo() error {
 
-	if err := inf.Usrname.ValidateUsername(); err != nil {
+	if err := ValidateUsername(inf.Usrname); err != nil {
 		return err
 	}
 
-	if err := inf.Email.ValidateEmail(); err != nil {
+	if err := ValidateEmail(inf.Email); err != nil {
 		return err
 	}
 
-	if err := inf.Password.ValidatePassword(); err != nil {
+	if err := ValidatePassword(inf.Password); err != nil {
 		return err
 	}
 

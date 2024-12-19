@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/repository"
@@ -49,17 +50,22 @@ func (h *Handler) singUpUser(c *gin.Context) {
 }
 
 func (h *Handler) getUserById(c *gin.Context) {
-	var (
-		userId entities.UserId
-	)
 
 	//400
-	if err := c.BindQuery(&userId); err != nil {
+	userIdstr, ok := c.GetQuery("userId")
+	if !ok {
+		newErrorResponse(c, http.StatusBadRequest, "email parametr does not exist in path")
+		return
+
+	}
+
+	userId, err := strconv.Atoi(userIdstr)
+	if err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	
-	if err := userId.ValidateUserId(); err != nil {
+
+	if err := entities.ValidateUserId(userId); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -80,13 +86,17 @@ func (h *Handler) getUserById(c *gin.Context) {
 }
 
 func (h *Handler) getUserByEmail(c *gin.Context) {
-	var (
-		email entities.Email
-	)
 
 	//400
-	if err := c.BindQuery(&email); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
+	email, ok := c.GetQuery("email")
+	if !ok {
+		newErrorResponse(c, http.StatusBadRequest, "email parametr does not exist in path")
+		return
+
+	}
+
+	if err := entities.ValidateEmail(email); err != nil {
+		newErrorResponse(c, http.StatusBadRequest, "email parametr does not exist in path"+err.Error())
 		return
 	}
 
@@ -104,6 +114,81 @@ func (h *Handler) getUserByEmail(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusOK, usr)
 }
 
-func (h *Handler) editUser(c *gin.Context) {}
+func (h *Handler) editUser(c *gin.Context) {
+	var usrInfo entities.UserInfo
 
-func (h *Handler) verifyEmail(c *gin.Context) {}
+	//400
+	userIdStr := c.Param("userId")
+	if userIdStr == "" {
+		newErrorResponse(c, http.StatusBadRequest, "userId parametr does not exist in path")
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := entities.ValidateUserId(userId); err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := c.BindJSON(&usrInfo); err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	usrInfo.UsrId = userId
+	if err := h.service.UpdateUser(usrInfo); err == repository.ErrNotFound {
+		newErrorResponse(c, http.StatusNotFound, err.Error())
+		return
+	} else if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+}
+
+func (h *Handler) verifyEmail(c *gin.Context) {
+	userIdstr := c.Param("userId")
+
+	if userIdstr == "" {
+		newErrorResponse(c, http.StatusBadRequest, "userId parametr does not exist in path")
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdstr)
+	if err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+
+	}
+
+	if err := entities.ValidateUserId(userId); err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	code := c.Query("code")
+	if code == "" {
+		newErrorResponse(c, http.StatusBadRequest, "code parametr does not exist in query")
+		return
+	}
+
+	if err := entities.ValidateCode(code); err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+
+	}
+
+	verified, err := h.service.VerifyCode(userId, code)
+	if  err == repository.ErrNotFound {
+		newErrorResponse(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	c.AbortWithStatusJSON(http.StatusOK, map[string]interface{}{
+		"verified": verified, 
+	})
+}
