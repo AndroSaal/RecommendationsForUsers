@@ -7,24 +7,6 @@ import (
 	"strconv"
 )
 
-const (
-	emailMaxLenth = 64
-	emailMinLenth = 10
-
-	usernameMaxLenth = 20
-	usernameMinLenth = 3
-
-	passwordMaxLenth = 32
-	passwordMinLenth = 8
-
-	userDiscriptionMaxLenth = 1024
-
-	userInterestMaxLenth = 32
-
-	maxUserAge = 150
-	minUserAge = 5
-)
-
 type UserId int
 
 type Username string
@@ -44,6 +26,24 @@ type UserAge int
 type ErrorResponse struct {
 	Reason string `json:"reason"`
 }
+
+const (
+	emailMaxLenth = 64
+	emailMinLenth = 10
+
+	usernameMaxLenth = 20
+	usernameMinLenth = 3
+
+	passwordMaxLenth = 32
+	passwordMinLenth = 8
+
+	userDiscriptionMaxLenth = 1024
+
+	userInterestMaxLenth = 32
+
+	maxUserAge = 150
+	minUserAge = 5
+)
 
 type UserInfo struct {
 	// UsrId         UserId          `json:"userId"`
