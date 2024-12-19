@@ -6,7 +6,7 @@ import (
 )
 
 // создание логгера
-func NewLogger(env string) *slog.Logger {
+func MustLoadNewLogger(env string) *slog.Logger {
 
 	fi := "NewLogger"
 

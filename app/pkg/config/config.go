@@ -36,7 +36,7 @@ type ServerConfig struct {
 // конфигурация REST API Сервера
 
 // MustLoadEnv загружает переменные окружения из файла .env,
-// возвращает установленное окружение (loacl/dev/prod)
+// возвращает установленное окружение (local/dev/prod)
 func MustLoadEnv() string {
 	fi := "config.MustLoadEnv"
 
