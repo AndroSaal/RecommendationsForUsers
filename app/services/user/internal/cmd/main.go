@@ -1,7 +1,75 @@
 package main
 
-import "fmt"
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/AndroSaal/RecommendationsForUsers/app/pkg/config"
+	mylog "github.com/AndroSaal/RecommendationsForUsers/app/pkg/log"
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/api"
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/server"
+)
 
 func main() {
-	fmt.Printf("OK !\n")
+	//з агрузка переменных окружения
+	env := config.MustLoadEnv()
+
+	// логгер
+	logger := mylog.NewLogger(env)
+
+	// конфига
+	cfg := config.MustLoadConfig()
+
+	// коннект к бд (Маст)
+	// dbConn := repository.NewPostgresDB(cfg.DBConf)
+
+	// //TODO: Инициализация соединения к серверу почты
+
+	// слой репозитория
+	// repository := repository.NewUserRepository(dbConn)
+
+	// // слой сервиса
+	// service := service.NewUserService(repository)
+
+	// транспортный слой
+	handlers := api.NewHandler( /*service*/ )
+
+	// инициализация сервера
+	srv, err := server.NewServer(cfg.SrvConf, handlers.InitRoutes(), logger)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// обработка остановки по сигналу
+	ctxSig, stop := signal.NotifyContext(
+		context.Background(), os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM,
+	)
+	defer stop()
+
+	// обработка остановки по таймауту
+	ctxTim, cancel := context.WithTimeout(context.Background(), cfg.SrvConf.Timeout)
+	defer cancel()
+
+	// запуск сервера
+	go func() {
+		if err = srv.Run(); err != http.ErrServerClosed {
+			logger.Error("error occured while running server: %s", err.Error())
+		}
+	}()
+
+	// graceful shutdown
+	for {
+		select {
+		case <-ctxTim.Done():
+			logger.Info("Server Stopped by timout")
+			srv.Stop(ctxTim)
+		case <-ctxSig.Done():
+			logger.Info("Server stopped by system signall")
+			srv.Stop(ctxSig)
+		}
+	}
 }

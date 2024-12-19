@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/pkg/config"
+	"github.com/pkg/errors"
 )
 
 const megabyte = 1 << 20
@@ -32,15 +33,17 @@ func NewServer(cfg config.ServerConfig, handler http.Handler, logger *slog.Logge
 }
 
 // запуск сервера
-func (s *Server) MustRun() {
+func (s *Server) Run() error {
 	fi := "transport.Server.MustRun"
 
 	s.logger.Info(fi + ":" + "starting server...")
 	s.logger.Info(fi + ":" + "server started on port " + s.Server.Addr)
 
 	if err := s.Server.ListenAndServe(); err != nil {
-		panic(fi + ":" + "cannot run server: " + err.Error())
+		errors.New(fi + ":" + "cannot run server: " + err.Error())
 	}
+
+	return nil
 
 }
 

@@ -13,13 +13,13 @@ MIGR_NAME = init
 
 #CONFIG
 CONFIGPATH = ./config
-CONFIGNAME = local
+CONFIGNAME = local.yaml
 
 build :
-	go build -o ./.bin/auth ./src/cmd/main.go
+	go build -o ./.bin/user ./internal/cmd/main.go
 
 run : build
-	./.bin/auth  --config_path=$(CONFIGPATH) --config_name=$(CONFIGNAME)
+	./.bin/user  --config_path=$(CONFIGPATH) --config_file=$(CONFIGNAME)
 
 clean :
 	rm -rf ./.bin

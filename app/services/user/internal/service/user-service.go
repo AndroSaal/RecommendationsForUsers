@@ -1,12 +1,19 @@
 package service
 
-import "github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
+import (
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/repository"
+)
 
 // имплементация интерфейса Service
-type UserService struct{}
+type UserService struct {
+	repo repository.Repository
+}
 
-func NewUserService() *UserService {
-	return &UserService{}
+func NewUserService(repo repository.Repository) *UserService {
+	return &UserService{
+		repo: repo,
+	}
 }
 
 func (s *UserService) CreateUser(user entities.UserInfo) (int, error) {

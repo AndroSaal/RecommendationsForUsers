@@ -1,0 +1,17 @@
+db:
+  username: "postgres"
+  password: "qwerty"
+  host: "localhost"
+  port: "5436"
+  dbname: "postgres"
+  sslmode: "disable"
+
+server:
+  port: "8081"
+  host: "localhost"
+  env: "local"
+  timeout: "10h"
+
+mail:
+  host: "smtp.gmail.com"
+  port: "465"

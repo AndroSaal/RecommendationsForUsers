@@ -30,7 +30,3 @@ type MailSender interface {
 type CodeVerifactor interface {
 	VerifyCode(userId int, code string) (bool, error)
 }
-
-func NewService() Service {
-	return NewUserService()
-}
