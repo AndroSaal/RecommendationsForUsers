@@ -18,6 +18,11 @@ const (
 	passwordMinLenth = 8
 
 	userDiscriptionMaxLenth = 1024
+
+	userInterestMaxLenth = 32
+
+	maxUserAge = 150
+	minUserAge = 5
 )
 
 type UserId int
@@ -32,7 +37,7 @@ type UserDiscription string
 
 type UserInterest string
 
-type UserInterests []string
+type UserInterests []UserInterest
 
 type UserAge int
 
@@ -41,13 +46,13 @@ type ErrorResponse struct {
 }
 
 type UserInfo struct {
-	UsrId        UserId          `json:"userId"`
-	Usrname      Username        `json:"username"`
-	Email        Email           `json:"email" binding:"required"`
-	Password     Password        `json:"password" binding:"required"`
-	UsrDesc      UserDiscription `json:"discription" binding:"required"`
-	UserInterest UserInterests   `json:"interests" binding:"required"`
-	UsrAge       UserAge         `json:"age" binding:"required"`
+	// UsrId         UserId          `json:"userId"`
+	Usrname       Username        `json:"username"`
+	Email         Email           `json:"email" binding:"required"`
+	Password      Password        `json:"password" binding:"required"`
+	UsrDesc       UserDiscription `json:"discription" binding:"required"`
+	UserInterests UserInterests   `json:"interests" binding:"required"`
+	UsrAge        UserAge         `json:"age" binding:"required"`
 }
 
 func (ui *UserId) ValidateUserId() error {
@@ -126,17 +131,60 @@ func (ud *UserDiscription) ValidateUserDiscription() error {
 }
 
 func (ui *UserInterest) ValidateUserInterest() error {
+	if len(*ui) > userInterestMaxLenth {
+		return fmt.Errorf("%s %s", "invalid user intersest: too long, max length is",
+			strconv.Itoa(userInterestMaxLenth))
+	}
 	return nil
 }
 
 func (ui *UserInterests) ValidateUserInterests() error {
+	for elem, userInterest := range *ui {
+		if err := userInterest.ValidateUserInterest(); err != nil {
+			return fmt.Errorf("user interests[%d]: %s", elem, err.Error())
+		}
+	}
+
+	if len(*ui) == 0 {
+		return errors.New("invalid user intersest: can`t be empty")
+	}
+
 	return nil
 }
 
 func (a *UserAge) ValidateUserAge() error {
+	if *a > maxUserAge || *a < minUserAge {
+		return fmt.Errorf("%s %s and %s", "invalid user age: must be between",
+			strconv.Itoa(minUserAge), strconv.Itoa(maxUserAge))
+	}
 	return nil
 }
 
 func (inf *UserInfo) ValidateUserInfo() error {
+
+	if err := inf.Usrname.ValidateUsername(); err != nil {
+		return err
+	}
+
+	if err := inf.Email.ValidateEmail(); err != nil {
+		return err
+	}
+
+	if err := inf.Password.ValidatePassword(); err != nil {
+		return err
+	}
+
+	if err := inf.UsrDesc.ValidateUserDiscription(); err != nil {
+		return err
+	}
+
+	if err := inf.UserInterests.ValidateUserInterests(); err != nil {
+		return err
+	}
+
+	if err := inf.UsrAge.ValidateUserAge(); err != nil {
+		return err
+	}
+
 	return nil
 }
