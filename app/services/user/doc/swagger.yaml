@@ -33,23 +33,54 @@ paths:
           description: Неверный формат запроса или его параметры.
           schema:
             $ref: "#/definitions/errorResponse"
+        "409":
+          description: Пользователь с таким email уже существует.
+          schema:
+            $ref: "#/definitions/errorResponse"
         "500":
           description: Ошибка сервера.
+
+  /sing-up/{userId}:
     get:
       summary: Получение информации
       description: |
-        Эндпойнт возвращает информацию о пользователе по email или username
-      operationId: getUser
+        Эндпойнт возвращает информацию о пользователе по userId
+      operationId: getUserById
+      parameters:
+        - name: userId
+          type: integer
+          description: Уникальный id пользователя
+          in: query
+          required: false
+      responses:
+        "200":
+          description: Информация о пользователе
+          schema:
+            $ref: "#/definitions/userInfo"
+        "400":
+          description: Неверный формат запроса или его параметры.
+          schema:
+            $ref: "#/definitions/errorResponse"
+        "401":
+          description: Пользователь не найден.
+          schema:
+            $ref: "#/definitions/errorResponse"
+        "500":
+          description: Ошибка сервера.
+
+  /sing-up/{email}/:
+    get:
+      summary: Получение информации
+      description: |
+        Эндпойнт возвращает информацию о пользователе по email
+      operationId: getUserByEmail
       parameters:
         - name: email
           type: string
           description: Email пользователя.
           maxLength: 64
           in: query
-        - name: userId
-          type: integer
-          description: Уникальный id пользователя
-          in: query
+          required: false
       responses:
         "200":
           description: Информация о пользователе
@@ -143,7 +174,7 @@ definitions:
       example: 0
     username:
       type: string
-      description: Уникальный slug пользователя.
+      description: Ник (псевдоним, имя) пользователя (не уникальный).
       maxLength: 20
       example: user007
     email:
