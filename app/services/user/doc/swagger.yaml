@@ -176,11 +176,15 @@ definitions:
       type: string
       description: Ник (псевдоним, имя) пользователя (не уникальный).
       maxLength: 20
+      minLength: 1
+      patttern: '[a-zA-Z0-9_]'
       example: user007
     email:
       type: string
       description: Email пользователя.
+      pattern: ^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-z]{2,}$
       maxLength: 64
+      minLength: 10
       example: user@gmail.com
     password:
       type: string
@@ -192,7 +196,7 @@ definitions:
     userDiscription:
       type: string
       description: Описание пользователя.
-      maxLength: 1000
+      maxLength: 1024
     userInterest:
       type: string
       description: Интерес пользователя - ключевое слово.

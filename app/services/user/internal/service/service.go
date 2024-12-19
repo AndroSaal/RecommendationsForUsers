@@ -14,7 +14,7 @@ type UserCreator interface {
 }
 
 type UserGetter interface {
-	GetUserInfoById(id entities.UserId) (entities.UserInfo, error)
+	GetUserById(id entities.UserId) (entities.UserInfo, error)
 	GetUserByEmail(email entities.Email) (entities.UserInfo, error)
 }
 
@@ -26,6 +26,6 @@ type MailSender interface {
 	SendMail(email *entities.Email) error
 }
 
-func NewService() Service{
+func NewService() Service {
 	return NewUserService()
 }

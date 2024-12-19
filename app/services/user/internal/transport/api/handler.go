@@ -49,23 +49,59 @@ func (h *Handler) singUpUser(c *gin.Context) {
 }
 
 func (h *Handler) getUserById(c *gin.Context) {
-	// var (
-	// 	userId entities.UserId
-	// )
+	var (
+		userId entities.UserId
+	)
 
-	// if err := c.BindQuery(&email); err != nil {
-	// 	if err == c.Err
-	// }
+	//400
+	if err := c.BindQuery(&userId); err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	
+	if err := userId.ValidateUserId(); err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	//401 и 500
+	usr, err := h.service.GetUserById(userId)
+	if err == repository.ErrNotFound {
+		newErrorResponse(c, http.StatusNotFound, err.Error())
+		return
+	} else if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	//200
+	c.AbortWithStatusJSON(http.StatusOK, usr)
+
 }
 
 func (h *Handler) getUserByEmail(c *gin.Context) {
-	// var (
-	// 	userId entities.UserId
-	// )
+	var (
+		email entities.Email
+	)
 
-	// if err := c.BindQuery(&email); err != nil {
-	// 	if err == c.Err
-	// }
+	//400
+	if err := c.BindQuery(&email); err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	//401 и 500
+	usr, err := h.service.GetUserByEmail(email)
+	if err == repository.ErrNotFound {
+		newErrorResponse(c, http.StatusNotFound, err.Error())
+		return
+	} else if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	//200
+	c.AbortWithStatusJSON(http.StatusOK, usr)
 }
 
 func (h *Handler) editUser(c *gin.Context) {}

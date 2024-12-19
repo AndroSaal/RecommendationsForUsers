@@ -13,7 +13,7 @@ func (s *UserService) CreateUser(user entities.UserInfo) (entities.UserId, error
 	return 0, nil
 }
 
-func (s *UserService) GetUserInfoById(id entities.UserId) (entities.UserInfo, error) {
+func (s *UserService) GetUserById(id entities.UserId) (entities.UserInfo, error) {
 	return entities.UserInfo{}, nil
 }
 
