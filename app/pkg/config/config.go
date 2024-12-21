@@ -41,7 +41,7 @@ func MustLoadEnv() string {
 	fi := "config.MustLoadEnv"
 
 	//путь до файла .env
-	if err := godotenv.Load(".env"); err != nil {
+	if err := godotenv.Load("../.env"); err != nil {
 		panic(fi + ": " + err.Error())
 	}
 
