@@ -11,9 +11,10 @@ import (
 )
 
 type ServiceConfig struct {
-	SrvConf ServerConfig
-	DBConf  DBConfig
-	Env     string `yaml:"env" env-default:"local"`
+	SrvConf  ServerConfig
+	DBConf   DBConfig
+	MailConf ServerMailConf
+	Env      string `yaml:"env" env-default:"local"`
 }
 
 // кофигурация базы данных
@@ -31,6 +32,13 @@ type ServerConfig struct {
 	Port    string        `yaml:"port"`
 	Host    string        `yaml:"host"`
 	Timeout time.Duration `yaml:"timeout"`
+}
+
+type ServerMailConf struct {
+	Login    string
+	Password string
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
 }
 
 // конфигурация REST API Сервера
@@ -77,16 +85,20 @@ func MustLoadConfig() ServiceConfig {
 func getConfigLocation() (string, string, error) {
 	fi := "config.getConfigLocation"
 
-	//загрузка пути к директории с файлами конфигурции и имени файла из argv, потом из env
+	//загрузка пути к директории с файлами конфигурции и имени файла из argv
 	pathToConfDir, nameOfConfFile := getConfLocationFromArgv()
+
+	//если имя директории - пустая строка, пробуем взять его из переменных окружения
 	if pathToConfDir == "" {
+
+		pathToConfDir = os.Getenv("CONFIG_DIR")
 
 		if pathToConfDir == "" {
 			return "", "", errors.New(fi + ": " + "pathToConfDir is empty at argv and env")
 		}
 	}
 
-	//аналогично пыаемся получиь имя файла из argv, потом из env
+	//если имя файла - пустая строка, пробуем взять его из переменных окружения
 	if nameOfConfFile == "" {
 
 		nameOfConfFile = os.Getenv("CONFIG_FILE")
@@ -117,8 +129,9 @@ func LoadConfig(path string, name string) (*ServiceConfig, error) {
 	fi := "config.LoadConfig"
 
 	var (
-		dbConf  DBConfig
-		srvConf ServerConfig
+		dbConf   DBConfig
+		srvConf  ServerConfig
+		mailConf ServerMailConf
 	)
 
 	//инициализируем имя, папку и тип конфига
@@ -128,6 +141,16 @@ func LoadConfig(path string, name string) (*ServiceConfig, error) {
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, errors.New(fi + ": " + err.Error())
+	}
+
+	//заполняем структуру сервера отправки писем
+	if err := viper.UnmarshalKey("mail", &mailConf); err != nil {
+		return nil, err
+	}
+
+	//получаем пароль и логин для почты, с которой будем посылать письма
+	if mailConf.Login, mailConf.Password = getMailCredentials(); mailConf.Password == "" || mailConf.Login == "" {
+		return nil, errors.New("mail credentials are empty")
 	}
 
 	//заполняем структуру ДБ
@@ -141,8 +164,17 @@ func LoadConfig(path string, name string) (*ServiceConfig, error) {
 	}
 
 	return &ServiceConfig{
-		SrvConf: srvConf,
-		DBConf:  dbConf,
+		SrvConf:  srvConf,
+		DBConf:   dbConf,
+		MailConf: mailConf,
 	}, nil
 
+}
+
+func getMailCredentials() (string, string) {
+
+	login := os.Getenv("MAIL_LOGIN")
+	password := os.Getenv("MAIL_PASSWORD")
+
+	return login, password
 }
