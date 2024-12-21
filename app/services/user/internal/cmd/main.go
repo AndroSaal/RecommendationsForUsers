@@ -11,6 +11,8 @@ import (
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/pkg/config"
 	mylog "github.com/AndroSaal/RecommendationsForUsers/app/pkg/log"
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/repository"
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/service"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/api"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/server"
 )
@@ -26,18 +28,18 @@ func main() {
 	cfg := config.MustLoadConfig()
 
 	// коннект к бд (Маст)
-	// dbConn := repository.NewPostgresDB(cfg.DBConf)
+	dbConn := repository.NewPostgresDB(cfg.DBConf)
 
-	// //TODO: Инициализация соединения к серверу почты
+	//TODO: Инициализация соединения к серверу почты
 
 	// слой репозитория
-	// repository := repository.NewUserRepository(dbConn)
+	repository := repository.NewUserRepository(dbConn)
 
-	// // слой сервиса
-	// service := service.NewUserService(repository)
+	// слой сервиса
+	service := service.NewUserService(repository)
 
 	// транспортный слой
-	handlers := api.NewHandler( /*service*/ )
+	handlers := api.NewHandler(service)
 
 	// инициализация сервера
 	srv, err := server.NewServer(cfg.SrvConf, handlers.InitRoutes(), logger)

@@ -10,7 +10,7 @@ host: localhost:8080
 schemes:
 - http
 paths:
-  /sing-up:
+  /user/sign-up:
     post:
       summary: Регистрация
       description: |
@@ -44,7 +44,7 @@ paths:
         "500":
           description: Ошибка сервера.
 
-  /sing-up/userId:
+  /user/sign-up/userId:
     get:
       summary: Получение информации
       description: |
@@ -72,7 +72,7 @@ paths:
         "500":
           description: Ошибка сервера.
 
-  /sing-up/email:
+  /user/sign-up/email:
     get:
       summary: Получение информации
       description: |
@@ -101,7 +101,7 @@ paths:
         "500":
           description: Ошибка сервера.
 
-  /sing-up/{userId}/edit:
+  /user/sign-up/{userId}/edit:
     patch:
       summary: Обновление профиля
       description: |
@@ -135,7 +135,7 @@ paths:
         "500":
           description: Ошибка сервера.
 
-  /sing-up/{userId}/verify-email:
+  /user/sign-up/{userId}/verify-email:
     put:
       summary: Подтверждение email
       description: |
