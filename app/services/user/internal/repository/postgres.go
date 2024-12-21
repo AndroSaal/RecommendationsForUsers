@@ -3,7 +3,7 @@ package repository
 import (
 	"fmt"
 
-	"github.com/AndroSaal/RecommendationsForUsers/app/pkg/config"
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/pkg/config"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )

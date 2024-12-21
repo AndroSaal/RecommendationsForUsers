@@ -9,12 +9,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/AndroSaal/RecommendationsForUsers/app/pkg/config"
-	mylog "github.com/AndroSaal/RecommendationsForUsers/app/pkg/log"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/repository"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/service"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/api"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/server"
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/pkg/config"
+	mylog "github.com/AndroSaal/RecommendationsForUsers/app/services/user/pkg/log"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 	env := config.MustLoadEnv()
 
 	// логгер
-	logger := mylog.NewLogger(env)
+	logger := mylog.MustNewLogger(env)
 
 	// конфига
 	cfg := config.MustLoadConfig()
@@ -31,13 +31,13 @@ func main() {
 	dbConn := repository.NewPostgresDB(cfg.DBConf)
 
 	//TODO: Инициализация соединения к серверу почты
-	mail := service.NewMailSender()
+	mail := service.NewMailSender(cfg.MailConf, logger)
 
 	// слой репозитория
 	repository := repository.NewUserRepository(dbConn, logger)
 
 	// слой сервиса
-	service := service.NewUserService(repository)
+	service := service.NewUserService(mail, repository, logger)
 
 	// транспортный слой
 	handlers := api.NewHandler(service)

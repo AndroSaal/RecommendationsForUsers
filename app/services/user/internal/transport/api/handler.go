@@ -33,7 +33,7 @@ func (h *Handler) signUpUser(c *gin.Context) {
 		return
 	}
 
-	id, err := h.service.CreateUser(usrInfo)
+	id, err := h.service.CreateUser(&usrInfo)
 
 	if err == repository.ErrAlreadyExists {
 		newErrorResponse(c, http.StatusConflict, err.Error())
@@ -141,7 +141,7 @@ func (h *Handler) editUser(c *gin.Context) {
 	}
 
 	usrInfo.UsrId = userId
-	if err := h.service.UpdateUser(usrInfo); err == repository.ErrNotFound {
+	if err := h.service.UpdateUser(&usrInfo); err == repository.ErrNotFound {
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return
 	} else if err != nil {

@@ -12,12 +12,12 @@ import (
 
 // имплементация интерфейса Service
 type UserService struct {
-	repo *repository.Repository
+	repo repository.Repository
 	log  *slog.Logger
 	mail *Mail
 }
 
-func NewUserService(mail *Mail, repo *repository.Repository, log *slog.Logger) *UserService {
+func NewUserService(mail *Mail, repo repository.Repository, log *slog.Logger) *UserService {
 	return &UserService{
 		mail: mail,
 		repo: repo,
@@ -46,15 +46,15 @@ func (s *UserService) CreateUser(user *entities.UserInfo) (int, error) {
 	return id, nil
 }
 
-func (s *UserService) GetUserById(id int) (entities.UserInfo, error) {
-	return entities.UserInfo{}, nil
+func (s *UserService) GetUserById(id int) (*entities.UserInfo, error) {
+	return &entities.UserInfo{}, nil
 }
 
-func (s *UserService) GetUserByEmail(email string) (entities.UserInfo, error) {
-	return entities.UserInfo{}, nil
+func (s *UserService) GetUserByEmail(email string) (*entities.UserInfo, error) {
+	return &entities.UserInfo{}, nil
 }
 
-func (s *UserService) UpdateUser(user entities.UserInfo) error {
+func (s *UserService) UpdateUser(user *entities.UserInfo) error {
 	return nil
 }
 

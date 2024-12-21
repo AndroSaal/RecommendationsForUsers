@@ -10,17 +10,17 @@ type Service interface {
 }
 
 type UserCreator interface {
-	CreateUser(user entities.UserInfo) (int, error)
+	CreateUser(user *entities.UserInfo) (int, error)
 	MailSender
 }
 
 type UserGetter interface {
-	GetUserById(id int) (entities.UserInfo, error)
-	GetUserByEmail(email string) (entities.UserInfo, error)
+	GetUserById(id int) (*entities.UserInfo, error)
+	GetUserByEmail(email string) (*entities.UserInfo, error)
 }
 
 type UserUpdator interface {
-	UpdateUser(user entities.UserInfo) error
+	UpdateUser(user *entities.UserInfo) error
 }
 
 type MailSender interface {
