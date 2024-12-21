@@ -35,6 +35,7 @@ func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
 }
 
 func (p *PostgresDB) AddNewUser(user *entities.UserInfo, code string) (int, error) {
+	query := `INSERT INTO users (email, password, code) VALUES ($1, $2, $3)`
 	return 0, nil
 }
 
