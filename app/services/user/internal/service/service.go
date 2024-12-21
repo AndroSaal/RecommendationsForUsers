@@ -11,7 +11,6 @@ type Service interface {
 
 type UserCreator interface {
 	CreateUser(user *entities.UserInfo) (int, error)
-	MailSender
 }
 
 type UserGetter interface {
@@ -24,7 +23,7 @@ type UserUpdator interface {
 }
 
 type MailSender interface {
-	SendMail(email *string) error
+	SendMail(email string, code string) error
 }
 
 type CodeVerifactor interface {

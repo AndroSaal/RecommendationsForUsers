@@ -14,10 +14,10 @@ import (
 type UserService struct {
 	repo repository.Repository
 	log  *slog.Logger
-	mail *Mail
+	mail MailSender
 }
 
-func NewUserService(mail *Mail, repo repository.Repository, log *slog.Logger) *UserService {
+func NewUserService(mail MailSender, repo repository.Repository, log *slog.Logger) *UserService {
 	return &UserService{
 		mail: mail,
 		repo: repo,
@@ -30,14 +30,17 @@ func NewUserService(mail *Mail, repo repository.Repository, log *slog.Logger) *U
 func (s *UserService) CreateUser(user *entities.UserInfo) (int, error) {
 	fi := "internal.User.CreateUser"
 
+	//генерация кода
+	code := generateCode()
+
+	//добавление кода и польщоватеоя в таблицы бд
 	id, err := s.repo.AddNewUser(user, code)
 	if err != nil {
 		s.log.Debug("%s: Error adding new user: %v", fi, err)
 		return 0, err
 	}
 
-	code := generateCode()
-
+	//отправка письма
 	if err := s.mail.SendMail(user.Email, code); err != nil {
 		s.log.Debug("%s: Error sending email: %v", fi, err)
 		return 0, err
@@ -46,26 +49,10 @@ func (s *UserService) CreateUser(user *entities.UserInfo) (int, error) {
 	return id, nil
 }
 
-func (s *UserService) GetUserById(id int) (*entities.UserInfo, error) {
-	return &entities.UserInfo{}, nil
-}
-
-func (s *UserService) GetUserByEmail(email string) (*entities.UserInfo, error) {
-	return &entities.UserInfo{}, nil
-}
-
-func (s *UserService) UpdateUser(user *entities.UserInfo) error {
-	return nil
-}
-
-func (s *UserService) SendMail(email *string) error {
-	return nil
-}
-
 func (s *UserService) VerifyCode(userId int, code string) (bool, error) {
 	fi := "internal.User.VerifyCode"
 
-	isVerified, err := s.repo.GetCodeFromEmail(userId, code)
+	isVerified, err := s.repo.VerifyCode(userId, code)
 
 	if err != nil {
 		s.log.Debug(fmt.Sprintf("%s: %s", fi, err.Error()))
@@ -73,6 +60,18 @@ func (s *UserService) VerifyCode(userId int, code string) (bool, error) {
 	}
 
 	return isVerified, nil
+}
+
+func (s *UserService) GetUserById(id int) (*entities.UserInfo, error) {
+	return s.repo.GetUserById(id)
+}
+
+func (s *UserService) GetUserByEmail(email string) (*entities.UserInfo, error) {
+	return s.repo.GetUserByEmail(email)
+}
+
+func (s *UserService) UpdateUser(user *entities.UserInfo) error {
+	return s.repo.UpdateUser(user)
 }
 
 func generateCode() string {
