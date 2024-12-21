@@ -6,12 +6,12 @@ type Service interface {
 	UserCreator
 	UserGetter
 	UserUpdator
-	MailSender
 	CodeVerifactor
 }
 
 type UserCreator interface {
 	CreateUser(user entities.UserInfo) (int, error)
+	MailSender
 }
 
 type UserGetter interface {

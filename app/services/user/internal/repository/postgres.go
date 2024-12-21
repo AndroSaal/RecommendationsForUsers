@@ -12,6 +12,7 @@ type PostgresDB struct {
 	db *sqlx.DB
 }
 
+// установка соединения с базой, паника в случае ошибки
 func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
 
 	db := sqlx.MustConnect("postgres", fmt.Sprintf(

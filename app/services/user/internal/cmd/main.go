@@ -33,7 +33,7 @@ func main() {
 	//TODO: Инициализация соединения к серверу почты
 
 	// слой репозитория
-	repository := repository.NewUserRepository(dbConn)
+	repository := repository.NewUserRepository(dbConn, logger)
 
 	// слой сервиса
 	service := service.NewUserService(repository)
