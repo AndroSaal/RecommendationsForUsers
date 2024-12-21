@@ -5,30 +5,32 @@ import "github.com/gin-gonic/gin"
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
 
-	singUp := router.Group("/sign-up")
-	{
-		// /sing-up
-		singUp.POST("", h.singUpUser)
+	user := router.Group("/user")
 
-		// /sing-up/userId
-		userId := singUp.Group("/userId")
+	singUp := user.Group("sign-up")
+	{
+		// POST user/sing-up
+		singUp.POST("", h.singUpUser) //ok
+
+		// GET user/sing-up/userId
+		userId := singUp.Group("/userId") //OK
 		{
 			userId.GET("", h.getUserById)
 		}
 
-		// /sing-up/email
+		// GET user/sing-up/email
 		email := singUp.Group("/email")
 		{
 			email.GET("", h.getUserByEmail)
 		}
 
-		// /sing-up/{userId}
+		// user/sing-up/{userId}
 		userIdInPath := singUp.Group("/:userId")
 		{
-			// /sing-up/{userId}/verify-email
+			// PUT user/sing-up/{userId}/verify-email
 			userIdInPath.PUT("/verify-email", h.verifyEmail)
 
-			// /sing-up/{userId}/edit
+			// PATCH user/sing-up/{userId}/edit
 			userIdInPath.PATCH("/edit", h.editUser)
 		}
 	}

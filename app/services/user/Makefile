@@ -15,11 +15,11 @@ MIGR_NAME = init
 CONFIGPATH = ./config
 CONFIGNAME = local.yaml
 
-build :
-	go build -o ./.bin/user ./internal/cmd/main.go
-
 run : build
 	./.bin/user  --config_path=$(CONFIGPATH) --config_file=$(CONFIGNAME)
+	
+build :
+	go build -o ./.bin/user ./internal/cmd/main.go
 
 clean :
 	rm -rf ./.bin

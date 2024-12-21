@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,9 +40,9 @@ func (h *Handler) singUpUser(c *gin.Context) {
 	// 	return
 	// }
 
-	// c.AbortWithStatusJSON(http.StatusOK, map[string]interface{}{
-	// 	"userId": id,
-	// })
+	c.AbortWithStatusJSON(http.StatusOK, map[string]interface{}{
+		"userId": 50,
+	})
 
 	fmt.Printf("singUpUser")
 
@@ -79,7 +80,7 @@ func (h *Handler) getUserById(c *gin.Context) {
 	// }
 
 	// //200
-	// c.AbortWithStatusJSON(http.StatusOK, usr)
+	c.AbortWithStatusJSON(http.StatusOK, "OK")
 
 	fmt.Printf("getUserById")
 

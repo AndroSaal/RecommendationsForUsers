@@ -13,7 +13,7 @@ const megabyte = 1 << 20
 
 type Server struct {
 	Server *http.Server
-	logger *slog.Logger
+	Logger *slog.Logger
 }
 
 // создание нового сервера
@@ -28,19 +28,20 @@ func NewServer(cfg config.ServerConfig, handler http.Handler, logger *slog.Logge
 
 	return &Server{
 		Server: server,
-		logger: logger,
+		Logger: logger,
 	}, nil
 }
 
 // запуск сервера
 func (s *Server) Run() error {
-	fi := "transport.Server.MustRun"
+	fi := "transport.Server.Run"
 
-	s.logger.Info(fi + ":" + "starting server...")
-	s.logger.Info(fi + ":" + "server started on port " + s.Server.Addr)
+	s.Logger.Info(fi + ":" + "starting server...")
+	s.Logger.Info(fi + ":" + "server started on port " + s.Server.Addr)
 
 	if err := s.Server.ListenAndServe(); err != nil {
-		errors.New(fi + ":" + "cannot run server: " + err.Error())
+		return errors.New(fi + ":" + "cannot run server: " + err.Error())
+
 	}
 
 	return nil
@@ -52,6 +53,6 @@ func (s *Server) Stop(ctx context.Context) {
 	fi := "transport.Server.Stop"
 
 	if err := s.Server.Shutdown(ctx); err != nil {
-		s.logger.Error(fi + ":" + "cannot stop server: " + err.Error())
+		s.Logger.Error(fi + ":" + "cannot stop server: " + err.Error())
 	}
 }

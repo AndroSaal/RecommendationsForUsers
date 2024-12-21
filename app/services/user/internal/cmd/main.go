@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -57,7 +58,9 @@ func main() {
 	// запуск сервера
 	go func() {
 		if err = srv.Run(); err != http.ErrServerClosed {
-			logger.Error("error occured while running server: %s", err.Error())
+			fmt.Println(fmt.Errorf("error occured while running server: " + err.Error()))
+		} else {
+			return
 		}
 	}()
 
@@ -67,9 +70,11 @@ func main() {
 		case <-ctxTim.Done():
 			logger.Info("Server Stopped by timout")
 			srv.Stop(ctxTim)
+			return
 		case <-ctxSig.Done():
 			logger.Info("Server stopped by system signall")
 			srv.Stop(ctxSig)
+			return
 		}
 	}
 }
