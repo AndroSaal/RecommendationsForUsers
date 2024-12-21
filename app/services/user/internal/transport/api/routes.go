@@ -10,10 +10,10 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	singUp := user.Group("sign-up")
 	{
 		// POST user/sing-up
-		singUp.POST("", h.singUpUser) //ok
+		singUp.POST("", h.signUpUser)
 
 		// GET user/sing-up/userId
-		userId := singUp.Group("/userId") //OK
+		userId := singUp.Group("/userId")
 		{
 			userId.GET("", h.getUserById)
 		}
