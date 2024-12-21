@@ -31,6 +31,7 @@ func main() {
 	dbConn := repository.NewPostgresDB(cfg.DBConf)
 
 	//TODO: Инициализация соединения к серверу почты
+	mail := service.NewMailSender()
 
 	// слой репозитория
 	repository := repository.NewUserRepository(dbConn, logger)

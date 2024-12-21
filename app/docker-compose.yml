@@ -15,6 +15,7 @@ services:
       KAFKA_ADVERTISED_PORT: "9092"
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       # KAFKA_CREATE_TOPICS: "example:2:1"
+      
   zookeeper:
     # conteiner_name: zookeeper
     image: zookeeper
@@ -28,12 +29,13 @@ services:
       context: ./services/user
       dockerfile: local.Dockerfile
     ports:
-      - "8080:8080"
+      - "8081:8081"
     volumes:
       - ./services/user:/usr/src/app
     depends_on:
       - user-postgres
       - kafka
+
   user-postgres:
     container_name: user-postgres
     image: postgres:14.8-alpine3.18

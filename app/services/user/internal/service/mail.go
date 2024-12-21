@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/smtp"
 
-	"github.com/AndroSaal/RecommendationsForUsers/app/pkg/config"
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/pkg/config"
 )
 
 // почта с которой будем отправлять писаьма с просьбой подтвердить email
