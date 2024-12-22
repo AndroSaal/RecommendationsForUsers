@@ -11,7 +11,7 @@ type Repository interface {
 	GetUserById(id int) (*entities.UserInfo, error)
 	GetUserByEmail(email string) (*entities.UserInfo, error)
 	VerifyCode(userId int, code string) (bool, error)
-	UpdateUser(user *entities.UserInfo) error
+	UpdateUser(userId int, user *entities.UserInfo) error
 }
 
 // имплементация Repository интерфейса
@@ -29,23 +29,61 @@ func NewUserRepository(db *PostgresDB, log *slog.Logger) *UserRepository {
 }
 
 func (r *UserRepository) AddNewUser(user *entities.UserInfo, code string) (int, error) {
-	return r.relDB.AddNewUser(user, code)
+	fi := "repository.UserRepository.AddNewUser"
+
+	userId, err := r.relDB.AddNewUser(user, code)
+	if err != nil {
+		r.log.Error(fi + ": " + err.Error())
+		return 0, err
+
+	}
+
+	return userId, nil
 }
 
-func (r *UserRepository) GetUserById(id int) (*entities.UserInfo, error) {
-	return r.relDB.GetUserById(id)
+func (r *UserRepository) GetUserById(userId int) (*entities.UserInfo, error) {
+	fi := "repository.UserRepository.GetUserById"
+
+	user, err := r.relDB.GetUserById(userId)
+	if err != nil {
+		r.log.Error(fi + ": " + err.Error())
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (r *UserRepository) GetUserByEmail(email string) (*entities.UserInfo, error) {
-	return r.relDB.GetUserByEmail(email)
+	fi := "repository.UserRepository.GetUserByEmail"
+
+	user, err := r.relDB.GetUserByEmail(email)
+	if err != nil {
+		r.log.Error(fi + ": " + err.Error())
+		return nil, err
+
+	}
+	return user, nil
 }
 
 func (r *UserRepository) VerifyCode(userId int, code string) (bool, error) {
-	return r.relDB.VerifyCode(userId, code)
+	fi := "repository.UserRepository.VerifyCode"
+
+	isVerified, err := r.relDB.VerifyCode(userId, code)
+	if err != nil {
+		r.log.Error(fi + ": " + err.Error())
+		return false, err
+	}
+	return isVerified, nil
 }
 
-func (r *UserRepository) UpdateUser(user *entities.UserInfo) error {
-	return r.relDB.UpdateUser(user)
+func (r *UserRepository) UpdateUser(userId int, user *entities.UserInfo) error {
+	fi := "repository.UserRepository.UpdateUser"
+
+	err := r.relDB.UpdateUser(userId, user)
+	if err != nil {
+		r.log.Error(fi + ": " + err.Error())
+		return err
+	}
+
+	return nil
 }
-
-

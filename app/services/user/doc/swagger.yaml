@@ -65,7 +65,7 @@ paths:
           description: Неверный формат запроса или его параметры.
           schema:
             $ref: "#/definitions/errorResponse"
-        "401":
+        "404":
           description: Пользователь не найден.
           schema:
             $ref: "#/definitions/errorResponse"
@@ -94,7 +94,7 @@ paths:
           description: Неверный формат запроса или его параметры.
           schema:
             $ref: "#/definitions/errorResponse"
-        "401":
+        "404":
           description: Пользователь не найден.
           schema:
             $ref: "#/definitions/errorResponse"
@@ -128,7 +128,7 @@ paths:
           description: Неверный формат запроса или его параметры.
           schema:
             $ref: "#/definitions/errorResponse"
-        "401":
+        "404":
           description: Пользователь не найден - не существует или введен некоректно.
           schema:
             $ref: "#/definitions/errorResponse"
@@ -164,7 +164,7 @@ paths:
           description: Неверный формат запроса или его параметры (в том числе неверный код).
           schema:
             $ref: "#/definitions/errorResponse"
-        "401":
+        "404":
           description: Пользователь не существует или некорректен.
           schema:
             $ref: "#/definitions/errorResponse"
@@ -244,6 +244,8 @@ definitions:
             - School
         age:
           $ref: "#/definitions/userAge"
+        isVerified:
+          type: boolean
       required:
         - username
         - email

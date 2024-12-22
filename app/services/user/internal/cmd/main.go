@@ -30,7 +30,7 @@ func main() {
 	// коннект к бд (Маст)
 	dbConn := repository.NewPostgresDB(cfg.DBConf)
 
-	//TODO: Инициализация соединения к серверу почты
+	//Инициализация соединения к серверу почты
 	mail := service.NewMailSender(cfg.MailConf, logger)
 
 	// слой репозитория

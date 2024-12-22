@@ -49,6 +49,8 @@ func (s *UserService) CreateUser(user *entities.UserInfo) (int, error) {
 	return id, nil
 }
 
+// функция проверяет кода на валидность, если код совпадает с указанным в базе
+// поле is_email_verified в таблице users меняется на true
 func (s *UserService) VerifyCode(userId int, code string) (bool, error) {
 	fi := "internal.User.VerifyCode"
 
@@ -62,16 +64,19 @@ func (s *UserService) VerifyCode(userId int, code string) (bool, error) {
 	return isVerified, nil
 }
 
+// функция возвращает пользователя из базы по его id
 func (s *UserService) GetUserById(id int) (*entities.UserInfo, error) {
 	return s.repo.GetUserById(id)
 }
 
+// функция возвращает пользователя из базы по его email
 func (s *UserService) GetUserByEmail(email string) (*entities.UserInfo, error) {
 	return s.repo.GetUserByEmail(email)
 }
 
-func (s *UserService) UpdateUser(user *entities.UserInfo) error {
-	return s.repo.UpdateUser(user)
+// функция заменяет информацию о пользователе в базе по его id
+func (s *UserService) UpdateUser(userId int, user *entities.UserInfo) error {
+	return s.repo.UpdateUser(userId, user)
 }
 
 func generateCode() string {

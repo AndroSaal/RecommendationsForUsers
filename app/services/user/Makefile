@@ -33,7 +33,7 @@ migr_up:
 	"$(DB_DRIVE)://$(DB_USER):$(DB_PASS)@$(DB_IP):$(DB_PORT)/$(DB_NAME)?$(DB_OPT)" \
 	-verbose up
 
-migr_down: migr_up
+migr_down:
 	migrate -path $(MIGRATIONSDIR) -database \
 	"$(DB_DRIVE)://$(DB_USER):$(DB_PASS)@$(DB_IP):$(DB_PORT)/$(DB_NAME)?$(DB_OPT)" \
-	-verbose up
+	-verbose down

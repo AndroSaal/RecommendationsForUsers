@@ -38,13 +38,14 @@ const (
 )
 
 type UserInfo struct {
-	UsrId         int             `json:"userId"`
-	Usrname       string          `json:"username"`
-	Email         string          `json:"email" binding:"required"`
-	Password      string          `json:"password" binding:"required"`
-	UsrDesc       UserDiscription `json:"discription" binding:"required"`
-	UserInterests UserInterests   `json:"interests" binding:"required"`
-	UsrAge        UserAge         `json:"age" binding:"required"`
+	UsrId           int             `json:"userId" db:"id"`
+	Usrname         string          `json:"username" db:"username"`
+	Email           string          `json:"email" binding:"required"`
+	Password        string          `json:"password" binding:"required"`
+	UsrDesc         UserDiscription `json:"discription" binding:"required"`
+	UserInterests   UserInterests   `json:"interests" binding:"required"`
+	UsrAge          UserAge         `json:"age" binding:"required"`
+	IsEmailVerified bool            `json:"isVerified"`
 }
 
 func ValidateUserId(usrId int) error {
@@ -57,10 +58,10 @@ func ValidateUserId(usrId int) error {
 }
 
 func ValidateUsername(username string) error {
-	re := regexp.MustCompile(`a-zA-Z0-9_`)
+	re := regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
 
-	if !re.MatchString(string(username)) {
-		return errors.New("invalid username: does not math regexp")
+	if !re.MatchString(username) {
+		return fmt.Errorf("invalid username: %s does not match regexp", username)
 	}
 	if len(username) > usernameMaxLenth {
 		return errors.New("invalid username: too long, max length is " + strconv.Itoa(usernameMaxLenth))

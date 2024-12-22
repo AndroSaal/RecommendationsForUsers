@@ -28,8 +28,10 @@ services:
     build:
       context: ./services/user
       dockerfile: local.Dockerfile
+    environment:
+      - DB_HOST=user-postgres
     ports:
-      - "8081:8081"
+      - "8080:8080"
     volumes:
       - ./services/user:/usr/src/app
     depends_on:

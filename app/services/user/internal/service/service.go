@@ -19,7 +19,7 @@ type UserGetter interface {
 }
 
 type UserUpdator interface {
-	UpdateUser(user *entities.UserInfo) error
+	UpdateUser(userId int, user *entities.UserInfo) error
 }
 
 type MailSender interface {

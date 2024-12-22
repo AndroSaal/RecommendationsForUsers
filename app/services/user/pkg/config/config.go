@@ -49,7 +49,7 @@ func MustLoadEnv() string {
 	fi := "config.MustLoadEnv"
 
 	//путь до файла .env
-	if err := godotenv.Load("../.env"); err != nil {
+	if err := godotenv.Load("config/.env"); err != nil {
 		panic(fi + ": " + err.Error())
 	}
 
@@ -156,6 +156,12 @@ func LoadConfig(path string, name string) (*ServiceConfig, error) {
 	//заполняем структуру ДБ
 	if err := viper.UnmarshalKey("db", &dbConf); err != nil {
 		return nil, err
+	}
+	if dbConf.Host == "localhost" {
+		dbConf.Host = os.Getenv("DB_HOST")
+		if dbConf.Host == "" {
+			dbConf.Host = "localhost"
+		}
 	}
 
 	//заполняем структуру сервера
