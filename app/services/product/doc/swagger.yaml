@@ -30,7 +30,11 @@ paths:
         "200": 
           description: добавление произошло успешно, возвращается productId
           schema:
-            $ref: "#/definitions/productId"
+            type: object
+            description: Используется для возвращения ошибки пользователю
+            properties:
+             userId:
+              $ref: "#/definitions/productId"
         "400":
           description: Неверный формат запроса или его параметры.
           schema:
