@@ -1,0 +1,44 @@
+swagger: "2.0"
+
+info:
+  version: 1.0.0
+  title: User API
+  description: |
+    API Для управлениея продуктами
+    Основыне функции: добавление, обновление, удаление
+host: localhost:8080
+schemes:
+- http
+
+paths:
+  /product/add:
+    post:
+      summary: Добавление нового продутка
+      description: |
+        Эндпойнт заносит информацию о новом продукте, возвращает в случае успеха (200)
+        id этого продукта, в случае ошибки объяснение что пошло не так
+      operationId: addNewProduct
+      parameters:
+        - name: productInfo
+          in: body
+          schema:
+            $ref: "#/definitions/productInfo"
+          description: Информация о добавляемом продукте
+          required: true
+
+definitions:
+  productInfo:
+    type: object
+    description: Информация о продукте
+    properties:
+      category:
+        type: string
+        description: категория продукта
+        maxLenth: 255
+        example: Видео
+      description:
+        type: string
+        description: Описание продукта
+        maxLenth: 1024
+        
+      
