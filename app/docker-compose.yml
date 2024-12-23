@@ -1,26 +1,49 @@
 services:
 
-  kafka:
-    container_name: kafka-0
-    hostname: kafka
-    image: apache/kafka:latest
+  zookeeper:
+    # conteiner_name: zookeeper
+    image: confluentinc/cp-zookeeper
+    hostname: zookeeper
+    container_name: zookeeper
     ports:
-      - 9092:9092
+      - 2181:2181
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEPER_SERVER_ID: 1
+      ZOOKEEPER_INIT_ID: 3
+      ZOOKEEPER_SYNC_LIMIT: 2
+  
+  kafka1:
+    container_name: kafka1
+    hostname: kafka1
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - 9091:9091
     links:
       - zookeeper
     depends_on:
       - zookeeper
     environment:  
-      KAFKA_ADVERTISED_HOST_NAME: "localhost"
-      KAFKA_ADVERTISED_PORT: "9092"
+      KAFKA_ADVERTISED_HOST_NAME: "kafka1"
+      # KAFKA_ADVERTISED_PORT: "9091"
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
-      # KAFKA_CREATE_TOPICS: "example:2:1"
-      
-  zookeeper:
-    # conteiner_name: zookeeper
-    image: zookeeper
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:29091,PLAINTEXT_HOST://localhost:9091
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
     ports:
-      - 2181:2181
+      - 9020:8080
+    depends_on:
+      - kafka1
+    environment: 
+      AUTH_TYPE: DISABLED
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:29091
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
 
   user-service:
     container_name: user-service
@@ -36,7 +59,7 @@ services:
       - ./services/user:/usr/src/app
     depends_on:
       - user-postgres
-      - kafka
+      - kafka1
 
   user-postgres:
     container_name: user-postgres
