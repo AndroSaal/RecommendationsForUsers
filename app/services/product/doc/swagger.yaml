@@ -11,7 +11,8 @@ schemes:
 - http
 
 paths:
-  /product/add:
+
+  /product:
     post:
       summary: Добавление нового продутка
       description: |
@@ -25,8 +26,96 @@ paths:
             $ref: "#/definitions/productInfo"
           description: Информация о добавляемом продукте
           required: true
+      responses:
+        "200": 
+          description: добавление произошло успешно, возвращается productId
+          schema:
+            $ref: "#/definitions/productId"
+        "400":
+          description: Неверный формат запроса или его параметры.
+          schema:
+            $ref: "#/definitions/errorResponse"
+        "409":
+          description: Продукт с таким email уже существует.
+          schema:
+            $ref: "#/definitions/errorResponse"
+        "500":
+          description: Ошибка сервера.
+          schema:
+            $ref: "#/definitions/errorResponse"
 
+  /product/{productId}:
+    patch:
+      summary: Обновление существующего продукта
+      description: |
+        Эндпойнт обновления информации о существующем продукте, возвращает "OK" в случае успеха (код 200), 
+        либо ошибку иинформацию о ней
+      operationId: updateProduct
+      parameters:
+        - name: productId
+          required: true
+          in: path
+          type: integer
+          description: Уникальный id продукта
+        - name: productInfo
+          in: body
+          schema:
+            $ref: "#/definitions/productInfo"
+          description: Информация о добавляемом продукте
+          required: true
+      responses:
+        "200": 
+          description: добавление произошло успешно, возвращается productId
+          schema:
+            $ref: "#/definitions/OKresponse"
+        "400":
+          description: Неверный формат запроса или его параметры.
+          schema:
+            $ref: "#/definitions/errorResponse"
+        "404":
+          description: Подукт не найден - не существует или введен некоректно.
+          schema:
+            $ref: "#/definitions/errorResponse"
+        "500":
+          description: Ошибка сервера.
+          schema:
+            $ref: "#/definitions/errorResponse"
+    delete:
+      summary: Удаление существующего продукта
+      description: |
+        Эндпойнт для удаления существующего продукта по его id, возварщает либо "OK" в случае успеха (код 200),
+        либо описание ошибки
+      operationId: deleteProduct
+      parameters:
+        - name: productId
+          required: true
+          in: path
+          type: integer
+          description: Уникальный id продукта
+      responses:
+        "200": 
+          description: удаление существующего продукта
+          schema:
+            $ref: "#/definitions/OKresponse"
+        "400":
+          description: Неверный формат запроса или его параметры.
+          schema:
+            $ref: "#/definitions/errorResponse"
+        "404":
+          description: Пользователь не найден - не существует или введен некоректно.
+          schema:
+            $ref: "#/definitions/errorResponse"
+        "500":
+          description: Ошибка сервера.
+          schema:
+            $ref: "#/definitions/errorResponse"
+            
 definitions:
+
+  OKresponse:
+    type: string
+    example: OK
+
   productInfo:
     type: object
     description: Информация о продукте
@@ -34,11 +123,32 @@ definitions:
       category:
         type: string
         description: категория продукта
-        maxLenth: 255
+        maxLength: 255
         example: Видео
       description:
         type: string
         description: Описание продукта
-        maxLenth: 1024
+        maxLength: 1024
+      status:
+        type: string
+        example: avalible
+
+  productId:
+    type: integer
+    description: Уникальный id продукта
+    example: 0
+
+  errorResponse:
+      type: object
+      description: Используется для возвращения ошибки пользователю
+      properties:
+        reason:
+          type: string
+          description: Описание ошибки в свободной форме
+          minLength: 5
+      required:
+        - reason
+      example:
+        reason: Объяснение, почему запрос пользователя не может быть обработан
         
       
