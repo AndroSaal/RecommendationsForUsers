@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"flag"
+	"log"
 	"os"
 	"time"
 
@@ -64,18 +65,18 @@ func MustLoadConfig() ServiceConfig {
 	//путь до файла конфигурации
 	pathToConfDir, nameOfConfFile, err := getConfigLocation()
 	if err != nil {
-		panic(fi + ": " + err.Error())
+		log.Fatal(fi + ": " + err.Error())
 	}
 
 	//проверяем существует ли такие директория и файл
 	if _, err := os.Stat(pathToConfDir + "/" + nameOfConfFile); os.IsNotExist(err) {
-		panic(fi + ": " + err.Error())
+		log.Fatal(fi + ": " + err.Error())
 	}
 
 	//загружаем конфигурацию
 	UserConf, err := LoadConfig(pathToConfDir, nameOfConfFile)
 	if err != nil {
-		panic(fi + ": " + err.Error())
+		log.Fatal(fi + ": " + err.Error())
 	}
 
 	return *UserConf

@@ -1,6 +1,7 @@
 package mylog
 
 import (
+	"log"
 	"log/slog"
 	"os"
 )
@@ -19,7 +20,7 @@ func MustNewLogger(env string) *slog.Logger {
 	case "prod":
 		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	default:
-		panic(fi + ":" + "Wrong evironment " + env)
+		log.Fatal(fi + ":" + "Wrong evironment: " + env)
 	}
 
 	return logger
