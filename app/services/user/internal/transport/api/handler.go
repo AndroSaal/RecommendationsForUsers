@@ -30,7 +30,6 @@ func (h *Handler) signUpUser(c *gin.Context) {
 	var usrInfo entities.UserInfo
 	fi := "api.Handler.signUpUser"
 	errCode := 0
-
 	//400
 	if err := c.BindJSON(&usrInfo); err != nil {
 		errCode = http.StatusBadRequest
@@ -62,11 +61,13 @@ func (h *Handler) signUpUser(c *gin.Context) {
 	})
 
 	usrInfo.UsrId = id
-	h.kafka.SendMessage("user_updates", usrInfo)
+	h.kafka.SendMessage(usrInfo)
 
 	defer func() {
 		if err != nil {
-			h.log.Debug(fi + "TrasportLevelError Code : " + strconv.Itoa(errCode) + " " + err.Error())
+			h.log.Debug(
+				fi + "TrasportLevelError Code : " + strconv.Itoa(errCode) + " " + err.Error(),
+			)
 		}
 	}()
 

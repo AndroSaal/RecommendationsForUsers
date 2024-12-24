@@ -3,6 +3,7 @@ package kafka
 import (
 	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
 	myproto "github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/kafka/pb"
@@ -35,8 +36,16 @@ func InitConfig(brokerAdressses []string) *sarama.Config {
 	return config
 }
 
-func (p *Producer) SendMessage(topic string, usrInfo entities.UserInfo) error {
+func (p *Producer) SendMessage(usrInfo entities.UserInfo) error {
+	topic := os.Getenv("KAFKA_TOPIC")
+
+	if topic == "" {
+		p.log.Error("KAFKA_TOPIC not set")
+		return fmt.Errorf("environment KAFKA_TOPIC not set")
+	}
+
 	uinterests := make([]string, len(usrInfo.UserInterests))
+
 	for _, elem := range usrInfo.UserInterests {
 		uinterests = append(uinterests, fmt.Sprintf("%v", elem))
 	}
