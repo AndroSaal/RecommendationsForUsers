@@ -53,6 +53,7 @@ services:
       dockerfile: local.Dockerfile
     environment:
       - DB_HOST=user-postgres
+      - KAFKA_ADDRS=kafka1:9091
     ports:
       - "8080:8080"
     volumes:
