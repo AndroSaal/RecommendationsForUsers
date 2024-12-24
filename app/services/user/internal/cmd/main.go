@@ -4,14 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/repository"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/service"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/api"
+	kafka "github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/kafka/producer"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/server"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/pkg/config"
 	mylog "github.com/AndroSaal/RecommendationsForUsers/app/services/user/pkg/log"
@@ -39,8 +42,11 @@ func main() {
 	// слой сервиса
 	service := service.NewUserService(mail, repository, logger)
 
+	//коннект к кафке
+	kafkaConn := connectToKafka(logger)
+
 	// транспортный слой
-	handlers := api.NewHandler(service, logger)
+	handlers := api.NewHandler(service, logger, kafkaConn)
 
 	// инициализация сервера
 	srv, err := server.NewServer(cfg.SrvConf, handlers.InitRoutes(), logger)
@@ -80,4 +86,19 @@ func main() {
 			return
 		}
 	}
+}
+
+func connectToKafka(loger *slog.Logger) *kafka.Producer {
+	fi := "main.connectToKafka"
+
+	str := os.Getenv("KAFKA_ADDRS")
+	addrs := strings.Split(str, ",")
+
+	p, err := kafka.NewProducer(addrs, loger)
+
+	if err != nil {
+		log.Fatal(fi + ":" + err.Error())
+	}
+
+	return p
 }

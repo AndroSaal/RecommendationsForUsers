@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
 	myproto "github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/kafka/pb"
@@ -11,9 +12,10 @@ import (
 
 type Producer struct {
 	Producer sarama.SyncProducer
+	log      *slog.Logger
 }
 
-func NewProducer(brokerAdressses []string) (*Producer, error) {
+func NewProducer(brokerAdressses []string, log *slog.Logger) (*Producer, error) {
 
 	producer, err := sarama.NewSyncProducer(brokerAdressses, InitConfig(brokerAdressses))
 	if err != nil {

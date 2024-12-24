@@ -33,7 +33,7 @@ func (s *UserService) CreateUser(user *entities.UserInfo) (int, error) {
 	//генерация кода
 	code := generateCode()
 
-	//добавление кода и польщоватеоя в таблицы бд
+	//добавление кода и пользователя в таблицы бд
 	id, err := s.repo.AddNewUser(user, code)
 	if err != nil {
 		s.log.Debug("%s: Error adding new user: %v", fi, err)
@@ -45,8 +45,6 @@ func (s *UserService) CreateUser(user *entities.UserInfo) (int, error) {
 		s.log.Debug("%s: Error sending email: %v", fi, err)
 		return 0, err
 	}
-
-	
 
 	return id, nil
 }

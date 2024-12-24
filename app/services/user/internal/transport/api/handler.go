@@ -8,18 +8,21 @@ import (
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/repository"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/service"
+	kafka "github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/kafka/producer"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
 	service service.Service
 	log     *slog.Logger
+	kafka   *kafka.Producer
 }
 
-func NewHandler(service service.Service, log *slog.Logger) *Handler {
+func NewHandler(service service.Service, log *slog.Logger, kafka *kafka.Producer) *Handler {
 	return &Handler{
 		service: service,
 		log:     log,
+		kafka:   kafka,
 	}
 }
 
@@ -57,6 +60,9 @@ func (h *Handler) signUpUser(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusOK, map[string]interface{}{
 		"userId": id,
 	})
+
+	usrInfo.UsrId = id
+	h.kafka.SendMessage("user_updates", usrInfo)
 
 	defer func() {
 		if err != nil {
