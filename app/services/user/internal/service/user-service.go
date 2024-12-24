@@ -46,6 +46,8 @@ func (s *UserService) CreateUser(user *entities.UserInfo) (int, error) {
 		return 0, err
 	}
 
+	
+
 	return id, nil
 }
 

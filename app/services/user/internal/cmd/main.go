@@ -40,7 +40,7 @@ func main() {
 	service := service.NewUserService(mail, repository, logger)
 
 	// транспортный слой
-	handlers := api.NewHandler(service)
+	handlers := api.NewHandler(service, logger)
 
 	// инициализация сервера
 	srv, err := server.NewServer(cfg.SrvConf, handlers.InitRoutes(), logger)
