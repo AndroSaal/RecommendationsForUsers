@@ -25,6 +25,7 @@ func NewProducer(brokerAdressses []string, log *slog.Logger) (*Producer, error) 
 
 	return &Producer{
 		Producer: producer,
+		log:      log,
 	}, nil
 }
 
@@ -60,10 +61,19 @@ func (p *Producer) SendMessage(usrInfo entities.UserInfo) error {
 		return err
 	}
 
-	p.Producer.SendMessage(&sarama.ProducerMessage{
+	partition, offset, err := p.Producer.SendMessage(&sarama.ProducerMessage{
 		Topic: topic,
 		Value: sarama.ByteEncoder(data),
 	})
+
+	if err != nil {
+		p.log.Error(err.Error())
+		return err
+	} else {
+		p.log.Info(fmt.Sprintf(
+			"Message is sent to topic %s, partition %d, offset %d", topic, partition, offset,
+		))
+	}
 
 	return nil
 }

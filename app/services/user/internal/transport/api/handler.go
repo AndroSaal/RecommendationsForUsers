@@ -208,6 +208,8 @@ func (h *Handler) editUser(c *gin.Context) {
 	//200
 	c.AbortWithStatusJSON(http.StatusOK, "OK")
 
+	h.kafka.SendMessage(usrInfo)
+
 	defer func() {
 		if err != nil {
 			h.log.Debug(fi + "TrasportLevelError Code : " + strconv.Itoa(errCode) + " " + err.Error())
