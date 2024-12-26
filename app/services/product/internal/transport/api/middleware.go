@@ -3,7 +3,7 @@ package api
 import (
 	"log/slog"
 
-	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/product/internal/entities"
 	"github.com/gin-gonic/gin"
 )
 

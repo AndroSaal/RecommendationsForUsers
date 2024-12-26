@@ -1,31 +1,21 @@
 package service
 
-import "github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
+import "github.com/AndroSaal/RecommendationsForUsers/app/services/product/internal/entities"
 
 type Service interface {
-	UserCreator
-	UserGetter
-	UserUpdator
-	CodeVerifactor
+	ProductCreater
+	ProductUpdater
+	ProductDeleter
 }
 
-type UserCreator interface {
-	CreateUser(user *entities.UserInfo) (int, error)
+type ProductCreater interface {
+	CreateProduct(user *entities.ProductInfo) (int, error)
 }
 
-type UserGetter interface {
-	GetUserById(id int) (*entities.UserInfo, error)
-	GetUserByEmail(email string) (*entities.UserInfo, error)
+type ProductUpdater interface {
+	UpdateProduct(userId int, user *entities.ProductInfo) error
 }
 
-type UserUpdator interface {
-	UpdateUser(userId int, user *entities.UserInfo) error
-}
-
-type MailSender interface {
-	SendMail(email string, code string) error
-}
-
-type CodeVerifactor interface {
-	VerifyCode(userId int, code string) (bool, error)
+type ProductDeleter interface {
+	DeleteProduct(productId int) error
 }

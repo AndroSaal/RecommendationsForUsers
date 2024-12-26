@@ -39,10 +39,6 @@ paths:
           description: Неверный формат запроса или его параметры.
           schema:
             $ref: "#/definitions/errorResponse"
-        "409":
-          description: Продукт с таким email уже существует.
-          schema:
-            $ref: "#/definitions/errorResponse"
         "500":
           description: Ошибка сервера.
           schema:
@@ -127,15 +123,30 @@ definitions:
       category:
         type: string
         description: категория продукта
-        maxLength: 255
+        maxLength: 32
+        minLength: 1
         example: Видео
       description:
         type: string
         description: Описание продукта
-        maxLength: 1024
+        maxLength: 255
+        minLength: 1
       status:
         type: string
         example: avalible
+        enum:
+          - avalible
+          - non-avalible
+      productKeyWords:
+        type: array
+        items:  
+          $ref: "#/definitions/productKeyWord"
+  
+  productKeyWord:
+    type: string
+
+    description: Киворд продукта, по которым пользователь ищет рекомендации
+
 
   productId:
     type: integer

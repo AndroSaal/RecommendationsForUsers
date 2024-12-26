@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
-	myproto "github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/kafka/pb"
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/product/internal/entities"
+	myproto "github.com/AndroSaal/RecommendationsForUsers/app/services/product/internal/transport/kafka/pb"
 	"github.com/IBM/sarama"
 	"google.golang.org/protobuf/proto"
 )
@@ -37,7 +37,7 @@ func InitConfig(brokerAdressses []string) *sarama.Config {
 	return config
 }
 
-func (p *Producer) SendMessage(usrInfo entities.UserInfo) error {
+func (p *Producer) SendMessage(prdInfo entities.ProductInfo) error {
 	topic := os.Getenv("KAFKA_TOPIC")
 
 	if topic == "" {
@@ -45,15 +45,15 @@ func (p *Producer) SendMessage(usrInfo entities.UserInfo) error {
 		return fmt.Errorf("environment KAFKA_TOPIC not set")
 	}
 
-	uinterests := make([]string, len(usrInfo.UserInterests))
+	productKeyWords := make([]string, len(prdInfo.ProductKeyWords))
 
-	for _, elem := range usrInfo.UserInterests {
-		uinterests = append(uinterests, fmt.Sprintf("%v", elem))
+	for _, elem := range prdInfo.ProductKeyWords {
+		productKeyWords = append(productKeyWords, fmt.Sprintf("%v", elem))
 	}
 
 	userMassage := myproto.UserUpdate{
-		UserId:        int64(usrInfo.UsrId),
-		UserInterests: uinterests,
+		UserId:        int64(prdInfo.ProductId),
+		UserInterests: productKeyWords,
 	}
 
 	data, err := proto.Marshal(&userMassage)

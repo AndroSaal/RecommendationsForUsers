@@ -4,18 +4,16 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
-	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/pkg/config"
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/product/internal/entities"
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/product/pkg/config"
 	"github.com/jmoiron/sqlx"
 	pq "github.com/lib/pq"
 )
 
 type RelationalDataBase interface {
-	AddNewUser(user *entities.UserInfo, code string) (int, error)
-	GetUserById(id int) (*entities.UserInfo, error)
-	GetUserByEmail(email string) (*entities.UserInfo, error)
-	VerifyCode(userId int, code string) (bool, error)
-	UpdateUser(userId int, user *entities.UserInfo) error
+	AddNewProduct(product *entities.ProductInfo) (int, error)
+	UpdateProduct(productId int, uproduct *entities.ProductInfo) error
+	DeleteProduct(productId int) error
 }
 
 // имплементация RelationalDataBase интерфейса
@@ -23,7 +21,7 @@ type PostgresDB struct {
 	db *sqlx.DB
 }
 
-// установка соединения с базой, паника в случае ошибки
+// установка соединения с базой, паника в случае ошиби
 func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
 
 	db := sqlx.MustConnect("postgres", fmt.Sprintf(
@@ -35,9 +33,10 @@ func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
 	}
 }
 
-func (p *PostgresDB) AddNewUser(user *entities.UserInfo, code string) (int, error) {
+func (p *PostgresDB) AddNewProduct(product *entities.ProductInfo) (int, error) {
 
-	var userId int
+	var productId int
+
 	//начинаем транзакцию
 	trx, err := p.db.Begin()
 	if err != nil {
@@ -45,223 +44,65 @@ func (p *PostgresDB) AddNewUser(user *entities.UserInfo, code string) (int, erro
 	}
 
 	//формируем запрос для добавления новой записи в таблицу users
-	queryAddUser := fmt.Sprintf(
+	query := fmt.Sprintf(
 		`INSERT INTO %s 
-		 (%s, %s, %s, %s, %s, %s) VALUES ($1, $2, $3, $4, $5, $6) 
+		 (%s, %s, %s) VALUES ($1, $2, $3) 
 		 RETURNING %s`,
-		usersTable,
-		emailPole, usernamePole, passwordPole, describtionPole, isEmailVerifiedPole, agePole,
+		productsTable,
+		categoryField, describtionField, statusField,
 		id,
 	)
-	//выполняем запрос по добавлению
-	row := trx.QueryRow(queryAddUser,
-		user.Email, user.Usrname, user.Password, user.UsrDesc, false, user.UsrAge)
 
-	//вычитывает полученный id
-	if err := row.Scan(&userId); err != nil {
-		trx.Rollback()
-		if err.(*pq.Error).Code == "23505" {
-			return 0, ErrAlreadyExists
-		} else {
-			return 0, err
-		}
-	}
-	//формируем запрос для добавления новой записи в таблицу codes
-	queryAddCode := fmt.Sprintf(`INSERT INTO %s (%s, %s) VALUES ($1, $2)`,
-		codesTable,
-		codePole, userIdPole,
-	)
-	//выполняем запрос
-	if _, err = trx.Exec(queryAddCode, code, userId); err != nil {
+	//выполняем запрос по добавлению нового продукта
+	row := p.db.QueryRow(query,
+		product.Category, product.Description, product.Status)
+
+	//вычитываем полученный id
+	if err := row.Scan(&productId); err != nil {
 		trx.Rollback()
 		return 0, err
 	}
 
-	//добавление интересов пользователя
-	if _, err = addUserInterests(user, trx, userId); err != nil {
+	//добавление ключевых слов продукта
+	if err = addProductKeyWords(product, trx, productId); err != nil {
 		trx.Rollback()
 		return 0, err
 	}
 	//ураа все получилось, коммит
 	trx.Commit()
 
-	return userId, nil
+	return productId, nil
 }
 
-func (p *PostgresDB) GetUserById(userId int) (*entities.UserInfo, error) {
-	var userDB UserInfoForDB
-
-	tgx, err := p.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
-	querySelectUser := fmt.Sprintf(`SELECT %s FROM %s WHERE %s = $1`,
-		all, usersTable, id,
-	)
-	row := tgx.QueryRow(querySelectUser, userId)
-
-	if err := row.Scan(
-		&userDB.UsrId, &userDB.Email, &userDB.Usrname, &userDB.Password,
-		&userDB.UsrDesc, &userDB.UsrAge, &userDB.IsEmailValid,
-	); err != nil {
-		tgx.Rollback()
-		if err == sql.ErrNoRows {
-			err = ErrNotFound
-		}
-
-		return nil, err
-	}
-
-	queryOfAllInterests := fmt.Sprintf(`SELECT %s FROM %s WHERE %s = $1`,
-		interestIdPole, userInterestsTable, userIdPole,
-	)
-
-	rows, err := tgx.Query(queryOfAllInterests, userId)
-	if err != nil {
-		tgx.Rollback()
-		return nil, err
-	}
-
-	queryToSelectInterestName := fmt.Sprintf(
-		`SELECT %s FROM %s WHERE %s = $1`,
-		intersestPole, interestsTable, id,
-	)
-
-	interests := make([]entities.UserInterest, 0)
-	for rows.Next() {
-		var (
-			interest   entities.UserInterest
-			interestId int
-		)
-
-		if err := rows.Scan(&interestId); err != nil {
-			tgx.Rollback()
-			return nil, err
-		}
-
-		interestRow := p.db.QueryRow(queryToSelectInterestName, interestId)
-		if err := interestRow.Scan(&interest); err != nil {
-			tgx.Rollback()
-			return nil, err
-		}
-
-		interests = append(interests, interest)
-	}
-
-	tgx.Commit()
-
-	return &entities.UserInfo{
-		UsrId:           userId,
-		Usrname:         userDB.Usrname,
-		Email:           userDB.Email,
-		Password:        userDB.Password,
-		UsrDesc:         entities.UserDiscription(userDB.UsrDesc),
-		UserInterests:   interests,
-		UsrAge:          entities.UserAge(userDB.UsrAge),
-		IsEmailVerified: userDB.IsEmailValid,
-	}, nil
-}
-
-func (p *PostgresDB) GetUserByEmail(email string) (*entities.UserInfo, error) {
-	var userId int
-
-	query := fmt.Sprintf(`SELECT %s FROM %s WHERE %s = $1`,
-		id, usersTable, emailPole,
-	)
-	row := p.db.QueryRow(query, email)
-
-	if err := row.Scan(&userId); err != nil {
-		if err == sql.ErrNoRows {
-			err = ErrNotFound
-		}
-		return nil, err
-	}
-
-	return p.GetUserById(userId)
-}
-
-func (p *PostgresDB) VerifyCode(userId int, code string) (bool, error) {
-	var (
-		codeFromDB string
-	)
-
-	tgx, err := p.db.Begin()
-	if err != nil {
-		return false, err
-	}
-
-	//формирование запроса к базе
-	querySelectCode := fmt.Sprintf(`SELECT %s FROM %s WHERE %s = $1`,
-		codePole, codesTable, userIdPole,
-	)
-
-	//выполняем запрос,
-	row := tgx.QueryRow(querySelectCode, userId)
-
-	//получаем запись
-	if err := row.Scan(&codeFromDB); err != nil {
-		tgx.Rollback()
-		if err == sql.ErrNoRows {
-			err = ErrNotFound
-		}
-		return false, err
-	}
-
-	if codeFromDB == code {
-		//формируем текст запроса
-		queryToAddVerification := fmt.Sprintf(
-			`UPDATE %s
-			SET %s = true 
-			WHERE %s = $1`,
-			usersTable,
-			isEmailVerifiedPole,
-			id,
-		)
-
-		//выполняем запрос
-		if _, err := tgx.Exec(queryToAddVerification, userId); err != nil {
-			tgx.Rollback()
-			return false, err
-		}
-	} else {
-		tgx.Rollback()
-		return false, nil
-	}
-	tgx.Commit()
-	return true, nil
-}
-
-func (p *PostgresDB) UpdateUser(userId int, user *entities.UserInfo) error {
+func (p *PostgresDB) UpdateProduct(productId int, product *entities.ProductInfo) error {
 
 	tgx, err := p.db.Begin()
 	if err != nil {
 		return err
 	}
-
-	rowCheck := tgx.QueryRow(`SELECT id FROM users WHERE id = $1`, userId)
 
 	//проверка что пользователь существует
-	if err := rowCheck.Scan(&userId); err != nil {
+	rowCheck := tgx.QueryRow(`SELECT id FROM users WHERE id = $1`, productId)
+	if err := rowCheck.Scan(&productId); err != nil {
 		tgx.Rollback()
 		if err == sql.ErrNoRows {
 			err = ErrNotFound
 		}
 		return err
-
 	}
 
 	query := fmt.Sprintf(
 		`UPDATE %s 
-		 SET %s = $1, %s = $2, %s = $3, %s = $4, %s = $5 
-		 WHERE %s = $6`,
-		usersTable,
-		usernamePole, emailPole, passwordPole, describtionPole, agePole,
+		 SET %s = $1, %s = $2, %s = $3 
+		 WHERE %s = $4`,
+		productsTable,
+		categoryField, describtionField, statusField,
 		id,
 	)
 
 	if _, err := tgx.Exec(query,
-		user.Usrname, user.Email, user.Password, user.UsrDesc, user.UsrAge, userId,
+		product.Category, product.Description, product.Status,
+		productId,
 	); err != nil {
 		tgx.Rollback()
 		if err.(*pq.Error).Code == "23503" {
@@ -270,19 +111,19 @@ func (p *PostgresDB) UpdateUser(userId int, user *entities.UserInfo) error {
 		return err
 	}
 
-	//удание старых интересов пользователя
+	//удание старых ключевых слов продукта
 	queryDeleteInterests := fmt.Sprintf(
 		`DELETE FROM %s WHERE %s = $1`,
-		userInterestsTable, userIdPole,
+		productTagsTable, productIdField,
 	)
-	if _, err := tgx.Exec(queryDeleteInterests, userId); err != nil {
+	if _, err := tgx.Exec(queryDeleteInterests, productId); err != nil {
 		tgx.Rollback()
 		return err
 
 	}
 
 	//добавление новых интересов пользователя
-	if _, err := addUserInterests(user, tgx, userId); err != nil {
+	if err := addProductKeyWords(product, tgx, productId); err != nil {
 		tgx.Rollback()
 		return err
 	}
@@ -291,33 +132,75 @@ func (p *PostgresDB) UpdateUser(userId int, user *entities.UserInfo) error {
 	return nil
 }
 
-func addUserInterests(user *entities.UserInfo, trx *sql.Tx, userId int) (int, error) {
-	for _, interest := range user.UserInterests {
+func (p *PostgresDB) DeleteProduct(productId int) error {
 
-		var interestId int
-		//формируем запрос для добавления новой записи в таблицу interests
-		queryAddInterest := fmt.Sprintf(`INSERT INTO %s (%s) VALUES ($1) RETURNING %s`,
-			interestsTable,
-			intersestPole, id,
+	tgx, err := p.db.Begin()
+	if err != nil {
+		return err
+	}
+	//проверка что пользователь существует
+	rowCheck := p.db.QueryRow(`SELECT id FROM users WHERE id = $1`, productId)
+	if err := rowCheck.Scan(&productId); err != nil {
+		if err == sql.ErrNoRows {
+			err = ErrNotFound
+		}
+		tgx.Rollback()
+		return err
+	}
+
+	query := fmt.Sprintf(
+		`DELETE FROM %s WHERE %s = $1`,
+		productsTable,
+		id,
+	)
+
+	if _, err := p.db.Exec(query, productId); err != nil {
+		tgx.Rollback()
+		return err
+	}
+
+	//удание старых ключевых слов продукта
+	queryDeleteInterests := fmt.Sprintf(
+		`DELETE FROM %s WHERE %s = $1`,
+		productTagsTable, productIdField,
+	)
+	if _, err := tgx.Exec(queryDeleteInterests, productId); err != nil {
+		tgx.Rollback()
+		return err
+
+	}
+
+	return nil
+
+}
+
+func addProductKeyWords(product *entities.ProductInfo, trx *sql.Tx, productId int) error {
+	for _, keyWord := range product.ProductKeyWords {
+
+		var keyWordId int
+		//формируем запрос для добавления новой записи в таблицу tags
+		queryAddKeyWords := fmt.Sprintf(`INSERT INTO %s (%s) VALUES ($1) RETURNING %s`,
+			tagsTable,
+			tagNameField, id,
 		)
 		//выполняем запрос
-		row := trx.QueryRow(queryAddInterest, interest)
+		row := trx.QueryRow(queryAddKeyWords, keyWord)
 
 		//получем id интереса
-		if err := row.Scan(&interestId); err != nil {
-			return 0, fmt.Errorf("can't get interest id: %v", err)
+		if err := row.Scan(&keyWordId); err != nil {
+			return fmt.Errorf("can't get keyWord id: %v", err)
 		}
 
-		//формируем запрос для добавления новой записи в таблицу user_interests
-		querryInterestAndUser := fmt.Sprintf(
+		//формируем запрос для добавления новой записи в таблицу products_tags
+		querryKeyWordsProduct := fmt.Sprintf(
 			`INSERT INTO %s (%s, %s) VALUES ($1, $2)`,
-			userInterestsTable,
-			userIdPole, interestIdPole,
+			productTagsTable,
+			tagIdField, productIdField,
 		)
 		//добавляем ид юзера и его интерес в таблицу user_interests
-		if _, err := trx.Exec(querryInterestAndUser, userId, interestId); err != nil {
-			return 0, err
+		if _, err := trx.Exec(querryKeyWordsProduct, keyWordId, productId); err != nil {
+			return err
 		}
 	}
-	return userId, nil
+	return nil
 }

@@ -33,14 +33,11 @@ func main() {
 	// коннект к бд (Маст)
 	dbConn := repository.NewPostgresDB(cfg.DBConf)
 
-	//Инициализация соединения к серверу почты
-	mail := service.NewMailSender(cfg.MailConf, logger)
-
 	// слой репозитория
 	repository := repository.NewUserRepository(dbConn, logger)
 
 	// слой сервиса
-	service := service.NewUserService(mail, repository, logger)
+	service := service.NewUserService(repository, logger)
 
 	//коннект к кафке
 	kafkaConn := connectToKafka(logger)
