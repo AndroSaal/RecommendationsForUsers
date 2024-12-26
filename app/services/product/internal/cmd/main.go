@@ -34,10 +34,10 @@ func main() {
 	dbConn := repository.NewPostgresDB(cfg.DBConf)
 
 	// слой репозитория
-	repository := repository.NewUserRepository(dbConn, logger)
+	repository := repository.NewProductRepository(dbConn, logger)
 
 	// слой сервиса
-	service := service.NewUserService(repository, logger)
+	service := service.NewProductService(repository, logger)
 
 	//коннект к кафке
 	kafkaConn := connectToKafka(logger)

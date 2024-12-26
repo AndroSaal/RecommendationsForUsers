@@ -7,7 +7,7 @@ import (
 )
 
 // имплементация Repository интерфейса
-type UserRepository struct {
+type ProductRepository struct {
 	relDB RelationalDataBase
 	log   *slog.Logger
 }
@@ -19,14 +19,14 @@ type Repository interface {
 }
 
 // слой репощитория - взаимодействие с Базами данных
-func NewUserRepository(db *PostgresDB, log *slog.Logger) *UserRepository {
-	return &UserRepository{
+func NewProductRepository(db *PostgresDB, log *slog.Logger) *ProductRepository {
+	return &ProductRepository{
 		relDB: db,
 		log:   log,
 	}
 }
 
-func (r *UserRepository) AddNewProduct(productInfo *entities.ProductInfo) (int, error) {
+func (r *ProductRepository) AddNewProduct(productInfo *entities.ProductInfo) (int, error) {
 	fi := "repository.UserRepository.AddNewUser"
 
 	userId, err := r.relDB.AddNewProduct(productInfo)
@@ -39,7 +39,7 @@ func (r *UserRepository) AddNewProduct(productInfo *entities.ProductInfo) (int, 
 	return userId, nil
 }
 
-func (r *UserRepository) UpdateProduct(productId int, productInfo *entities.ProductInfo) error {
+func (r *ProductRepository) UpdateProduct(productId int, productInfo *entities.ProductInfo) error {
 	fi := "repository.UserRepository.UpdateUser"
 
 	err := r.relDB.UpdateProduct(productId, productInfo)
@@ -48,5 +48,16 @@ func (r *UserRepository) UpdateProduct(productId int, productInfo *entities.Prod
 		return err
 	}
 
+	return nil
+}
+
+func (r *ProductRepository) DeleteProduct(productId int) error {
+	fi := "repository.UserRepository.DeleteUser"
+
+	err := r.relDB.DeleteProduct(productId)
+	if err != nil {
+		r.log.Error(fi + ": " + err.Error())
+		return err
+	}
 	return nil
 }

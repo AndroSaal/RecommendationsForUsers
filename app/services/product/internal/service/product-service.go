@@ -13,7 +13,7 @@ type ProductService struct {
 	log  *slog.Logger
 }
 
-func NewUserService(repo repository.Repository, log *slog.Logger) *ProductService {
+func NewProductService(repo repository.Repository, log *slog.Logger) *ProductService {
 	return &ProductService{
 		repo: repo,
 		log:  log,

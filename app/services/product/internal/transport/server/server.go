@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/pkg/config"
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/product/pkg/config"
 	"github.com/pkg/errors"
 )
 
