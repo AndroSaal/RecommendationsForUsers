@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS products (
+    id SERIAL PRIMARY KEY,
+    category VARCHAR(255) NOT NULL,
+    prd_description VARCHAR(255) NOT NULL,
+    prd_status VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS product_tags (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL,
+    tag_id INTEGER NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE 
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS tags (
+    id SERIAL PRIMARY KEY,
+    tag_name VARCHAR(255) NOT NULL,
+);
