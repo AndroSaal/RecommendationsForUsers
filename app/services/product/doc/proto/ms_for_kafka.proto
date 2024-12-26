@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "github.com/AndroSaal/RecommendationsForUsers/app/services/product/doc/myproto";
+
+message ProductAction {
+    int64 productId = 1;
+    string action = 3;
+    repeated string productKeyWords = 2;
+}

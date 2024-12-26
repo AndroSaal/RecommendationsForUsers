@@ -56,9 +56,9 @@ func (h *Handler) addNewProduct(c *gin.Context) {
 		"productId": id,
 	})
 
-	//TODO: Отправка сообщения в кафку
-	// prdInfo.ProductId = id
-	// h.kafka.SendMessage(prdInfo)
+	//Отправка сообщения в кафку
+	prdInfo.ProductId = id
+	h.kafka.SendMessage(prdInfo)
 
 	defer func() {
 		if err != nil {
@@ -166,7 +166,7 @@ func (h *Handler) deleteProduct(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusOK, "OK")
 
 	//подключчеить кафку - сообщение откатить
-	// h.kafka.SendMessage(prdInfo)
+	h.kafka.SendMessage(prdInfo)
 
 	defer func() {
 		if err != nil {

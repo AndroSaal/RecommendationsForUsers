@@ -51,9 +51,9 @@ func (p *Producer) SendMessage(prdInfo entities.ProductInfo) error {
 		productKeyWords = append(productKeyWords, fmt.Sprintf("%v", elem))
 	}
 
-	userMassage := myproto.UserUpdate{
-		UserId:        int64(prdInfo.ProductId),
-		UserInterests: productKeyWords,
+	userMassage := myproto.ProductAction{
+		ProductId:        int64(prdInfo.ProductId),
+		ProductKeyWords: productKeyWords,
 	}
 
 	data, err := proto.Marshal(&userMassage)
