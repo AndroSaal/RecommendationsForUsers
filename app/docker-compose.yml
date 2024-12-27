@@ -12,11 +12,11 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
       ZOOKEPER_SERVER_ID: 1
       ZOOKEEPER_INIT_ID: 3
-      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SYNC_LIMIT: 4
   
   kafka1:
     container_name: kafka1
-    hostname: kafka1
+    # hostname: kafka1
     image: confluentinc/cp-kafka:latest
     ports:
       - 9091:9091
@@ -24,13 +24,13 @@ services:
       - zookeeper
     depends_on:
       - zookeeper
-    environment:  
+    environment:
       KAFKA_ADVERTISED_HOST_NAME: "kafka1"
-      # KAFKA_ADVERTISED_PORT: "9091"
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       KAFKA_BROKER_ID: 1
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:29091,PLAINTEXT_HOST://localhost:9091
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092,PLAINTEXT_HOST://localhost:9091
+      KAFKA_CREATE_TOPICS: "user_updates:4:2,product_updates:4:2"
 
   kafka-ui:
     container_name: kafka-ui
@@ -39,10 +39,10 @@ services:
       - 9020:8080
     depends_on:
       - kafka1
-    environment: 
+    environment:
       AUTH_TYPE: DISABLED
       KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:29091
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:9092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
 
   user-service:
@@ -50,10 +50,12 @@ services:
     image: user-service
     build:
       context: ./services/user
+
       dockerfile: local.Dockerfile
     environment:
       - DB_HOST=user-postgres
-      - KAFKA_ADDRS=kafka1:9091
+      - KAFKA_ADDRS=kafka1:9092
+      - KAFKA_TOPIC=user_updates
     ports:
       - "8080:8080"
     volumes:
@@ -61,7 +63,7 @@ services:
     depends_on:
       - user-postgres
       - kafka1
-
+      - zookeeper
   user-postgres:
     container_name: user-postgres
     image: postgres:14.8-alpine3.18
@@ -74,6 +76,46 @@ services:
       - ./services/user/migration/000001_init.up.sql:/docker-entrypoint-initdb.d/initdb.sql
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+
+  product-service:
+    container_name: product-service
+    image: product-service
+    build:
+      context: ./services/product
+
+      dockerfile: local.Dockerfile
+    environment:
+      - DB_HOST=product-postgres
+      - KAFKA_ADDRS=kafka1:9092
+      - KAFKA_TOPIC=product_updates
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./services/product:/usr/src/app
+    depends_on:
+      - product-postgres
+      - kafka1
+      - zookeeper
+
+  product-postgres:
+    container_name: product-postgres
+    image: postgres:14.8-alpine3.18
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "qwerty"
+      PGSSLMODE: "disable"
+    volumes:
+      - ./services/product/migration/000001_init.up.sql:/docker-entrypoint-initdb.d/initdb.sql
+    ports:
+      - "5434:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
