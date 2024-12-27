@@ -144,7 +144,7 @@ services:
       - zookeeper
 
   recommendation-postgres:
-    container_name: product-postgres
+    container_name: recommendation-postgres
     image: postgres:14.8-alpine3.18
     environment:
       POSTGRES_DB: "postgres"
