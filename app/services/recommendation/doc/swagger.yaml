@@ -1,0 +1,67 @@
+swagger: "2.0"
+
+info:
+  version: 1.0.0
+  title: recommendation API
+  description: |
+    API Для получения рекомендаций на основе ползователя
+host: localhost:8082
+schemes:
+- http
+paths:
+
+  /recommendation/{userId}:
+    get:
+      summary: Получение рекомендаций для ползователя
+      description: |
+        Эндпойнт формирует сипсок id пордуктов, которые могут быть интересны пользователю на
+        основе сообщений полученных из кафки
+      operationId: getUserRecommendations
+      parameters:
+        - name : userId
+          in: path
+          type: integer
+          description: Уникальный id пользователя
+          required: true
+      responses:
+        "200": 
+          description: |
+            система отработала хорошо, возвращаются либо id продуктов, либо -1, если
+            нет рекомендуемых продуктов для пользователя
+          schema:
+            type: array
+            description: id предлагаемых пользователю продуктов
+            items:
+              $ref: "#/definitions/productId"
+            example:
+              - 1
+              - 2
+              - 3
+        "400":
+          description: Неверный формат запроса или его параметры.
+          schema:
+            $ref: "#/definitions/errorResponse"
+        "404":
+          description: Пользователь не найден - не существует или введен некоректно.
+          schema:
+            $ref: "#/definitions/errorResponse"
+        "500":
+          description: Ошибка сервера.
+
+definitions:
+    productId:
+      type: integer
+      description: Уникальный id продукта
+      example: 0
+    errorResponse:
+      type: object
+      description: Используется для возвращения ошибки пользователю
+      properties:
+        reason:
+          type: string
+          description: Описание ошибки в свободной форме
+          minLength: 5
+      required:
+        - reason
+      example:
+        reason: Объяснение, почему запрос пользователя не может быть обработан
