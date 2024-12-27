@@ -20,18 +20,18 @@ type RelationalDataBase interface {
 
 // имплементация RelationalDataBase интерфейса
 type PostgresDB struct {
-	db *sqlx.DB
+	DB *sqlx.DB
 }
 
 // установка соединения с базой, паника в случае ошибки
 func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
 
-	db := sqlx.MustConnect("postgres", fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+	DB := sqlx.MustConnect("postgres", fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s DBname=%s sslmode=%s",
 		cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.Dbname, cfg.Sslmode))
 
 	return &PostgresDB{
-		db: db,
+		DB: DB,
 	}
 }
 
@@ -39,7 +39,7 @@ func (p *PostgresDB) AddNewUser(user *entities.UserInfo, code string) (int, erro
 
 	var userId int
 	//начинаем транзакцию
-	trx, err := p.db.Begin()
+	trx, err := p.DB.Begin()
 	if err != nil {
 		return 0, err
 	}
@@ -91,7 +91,7 @@ func (p *PostgresDB) AddNewUser(user *entities.UserInfo, code string) (int, erro
 func (p *PostgresDB) GetUserById(userId int) (*entities.UserInfo, error) {
 	var userDB UserInfoForDB
 
-	tgx, err := p.db.Begin()
+	tgx, err := p.DB.Begin()
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (p *PostgresDB) GetUserById(userId int) (*entities.UserInfo, error) {
 			return nil, err
 		}
 
-		interestRow := p.db.QueryRow(queryToSelectInterestName, interestId)
+		interestRow := p.DB.QueryRow(queryToSelectInterestName, interestId)
 		if err := interestRow.Scan(&interest); err != nil {
 			tgx.Rollback()
 			return nil, err
@@ -169,7 +169,7 @@ func (p *PostgresDB) GetUserByEmail(email string) (*entities.UserInfo, error) {
 	query := fmt.Sprintf(`SELECT %s FROM %s WHERE %s = $1`,
 		id, usersTable, emailPole,
 	)
-	row := p.db.QueryRow(query, email)
+	row := p.DB.QueryRow(query, email)
 
 	if err := row.Scan(&userId); err != nil {
 		if err == sql.ErrNoRows {
@@ -186,7 +186,7 @@ func (p *PostgresDB) VerifyCode(userId int, code string) (bool, error) {
 		codeFromDB string
 	)
 
-	tgx, err := p.db.Begin()
+	tgx, err := p.DB.Begin()
 	if err != nil {
 		return false, err
 	}
@@ -234,7 +234,7 @@ func (p *PostgresDB) VerifyCode(userId int, code string) (bool, error) {
 
 func (p *PostgresDB) UpdateUser(userId int, user *entities.UserInfo) error {
 
-	tgx, err := p.db.Begin()
+	tgx, err := p.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -321,3 +321,7 @@ func addUserInterests(user *entities.UserInfo, trx *sql.Tx, userId int) (int, er
 	}
 	return userId, nil
 }
+
+// func (p *PostgresDB) Close() {
+// 	p.DB.Close()
+// }

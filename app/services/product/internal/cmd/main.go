@@ -32,6 +32,7 @@ func main() {
 
 	// коннект к бд (Маст)
 	dbConn := repository.NewPostgresDB(cfg.DBConf)
+	defer dbConn.DB.Close()
 
 	// слой репозитория
 	repository := repository.NewProductRepository(dbConn, logger)
@@ -41,6 +42,7 @@ func main() {
 
 	//коннект к кафке
 	kafkaConn := connectToKafka(logger)
+	defer kafkaConn.Producer.Close()
 
 	// транспортный слой
 	handlers := api.NewHandler(service, logger, kafkaConn)

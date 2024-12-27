@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Параметры запроса
-url="http://localhost:8080/sign-up"
+url="http://localhost:8080/user/sign-up"
 method="POST"
 headers=(
   "accept: application/json"

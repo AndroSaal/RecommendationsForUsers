@@ -18,7 +18,7 @@ type RelationalDataBase interface {
 
 // имплементация RelationalDataBase интерфейса
 type PostgresDB struct {
-	db *sqlx.DB
+	DB *sqlx.DB
 }
 
 // установка соединения с базой, паника в случае ошиби
@@ -29,7 +29,7 @@ func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
 		cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.Dbname, cfg.Sslmode))
 
 	return &PostgresDB{
-		db: db,
+		DB: db,
 	}
 }
 
@@ -38,7 +38,7 @@ func (p *PostgresDB) AddNewProduct(product *entities.ProductInfo) (int, error) {
 	var productId int
 
 	//начинаем транзакцию
-	trx, err := p.db.Begin()
+	trx, err := p.DB.Begin()
 	if err != nil {
 		return 0, err
 	}
@@ -54,7 +54,7 @@ func (p *PostgresDB) AddNewProduct(product *entities.ProductInfo) (int, error) {
 	)
 
 	//выполняем запрос по добавлению нового продукта
-	row := p.db.QueryRow(query,
+	row := p.DB.QueryRow(query,
 		product.Category, product.Description, product.Status)
 
 	//вычитываем полученный id
@@ -76,7 +76,7 @@ func (p *PostgresDB) AddNewProduct(product *entities.ProductInfo) (int, error) {
 
 func (p *PostgresDB) UpdateProduct(productId int, product *entities.ProductInfo) error {
 
-	tgx, err := p.db.Begin()
+	tgx, err := p.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -134,12 +134,12 @@ func (p *PostgresDB) UpdateProduct(productId int, product *entities.ProductInfo)
 
 func (p *PostgresDB) DeleteProduct(productId int) error {
 
-	tgx, err := p.db.Begin()
+	tgx, err := p.DB.Begin()
 	if err != nil {
 		return err
 	}
 	//проверка что пользователь существует
-	rowCheck := p.db.QueryRow(`SELECT id FROM users WHERE id = $1`, productId)
+	rowCheck := p.DB.QueryRow(`SELECT id FROM users WHERE id = $1`, productId)
 	if err := rowCheck.Scan(&productId); err != nil {
 		if err == sql.ErrNoRows {
 			err = ErrNotFound
@@ -154,7 +154,7 @@ func (p *PostgresDB) DeleteProduct(productId int) error {
 		id,
 	)
 
-	if _, err := p.db.Exec(query, productId); err != nil {
+	if _, err := p.DB.Exec(query, productId); err != nil {
 		tgx.Rollback()
 		return err
 	}
