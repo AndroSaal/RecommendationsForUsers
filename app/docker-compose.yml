@@ -123,3 +123,42 @@ services:
       retries: 5
       start_period: 10s
     restart: always
+
+  recommendation-service:
+    container_name: recommendation-service
+    image: recommendation-service
+    build:
+      context: ./services/recommendation
+      dockerfile: local.Dockerfile
+    environment:
+      - DB_HOST=recommendation-postgres
+      - KAFKA_ADDRS=kafka1:9092
+      - KAFKA_TOPIC=user_updates,product_updates
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./services/recommendation:/usr/src/app
+    depends_on:
+      - recommendation-postgres
+      - kafka1
+      - zookeeper
+
+  recommendation-postgres:
+    container_name: product-postgres
+    image: postgres:14.8-alpine3.18
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "qwerty"
+      PGSSLMODE: "disable"
+    volumes:
+      - ./services/recommendation/migration/000001_init.up.sql:/docker-entrypoint-initdb.d/initdb.sql
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
