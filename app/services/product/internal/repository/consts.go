@@ -10,23 +10,23 @@ const (
 	//её поля
 	id               = "id" //PK
 	categoryField    = "category"
-	describtionField = "describtion"
-	statusField      = "status"
+	describtionField = "prd_description"
+	statusField      = "prd_status"
 )
 
 const (
 	//таблица
-	productTagsTable = "product_tags"
+	productKwTable = "product_keyWord"
 	//её поля
 	//id = "id" PK
 	productIdField = "product_id"
-	tagIdField     = "tag_id"
+	kwIdField      = "kw_id"
 )
 
 const (
 	//таблица
-	tagsTable = "tags"
+	kwTable = "keyWords"
 	//её поля
 	//id = "id" PK
-	tagNameField = "tag_name"
+	kwNameField = "kw_name"
 )

@@ -37,7 +37,7 @@ func InitConfig(brokerAdressses []string) *sarama.Config {
 	return config
 }
 
-func (p *Producer) SendMessage(prdInfo entities.ProductInfo) error {
+func (p *Producer) SendMessage(prdInfo entities.ProductInfo, action string) error {
 	topic := os.Getenv("KAFKA_TOPIC")
 
 	if topic == "" {
@@ -52,8 +52,9 @@ func (p *Producer) SendMessage(prdInfo entities.ProductInfo) error {
 	}
 
 	userMassage := myproto.ProductAction{
-		ProductId:        int64(prdInfo.ProductId),
+		ProductId:       int64(prdInfo.ProductId),
 		ProductKeyWords: productKeyWords,
+		Action:          action,
 	}
 
 	data, err := proto.Marshal(&userMassage)

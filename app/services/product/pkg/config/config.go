@@ -32,18 +32,19 @@ type ServerConfig struct {
 	Port    string        `yaml:"port"`
 	Host    string        `yaml:"host"`
 	Timeout time.Duration `yaml:"timeout"`
+	Env     string        `yaml:"env" env-default:"local"`
 }
 
 // конфигурация REST API Сервера
 
 // MustLoadEnv загружает переменные окружения из файла .env,
 // возвращает установленное окружение (local/dev/prod)
-func MustLoadEnv() string {
+func LoadEnv() string {
 	fi := "config.MustLoadEnv"
 
 	//путь до файла .env
 	if err := godotenv.Load("config/.env"); err != nil {
-		panic(fi + ": " + err.Error())
+		log.Printf(fi + ": " + err.Error())
 	}
 
 	env := os.Getenv("ENVIRONMENT")

@@ -114,7 +114,7 @@ func (p *PostgresDB) UpdateProduct(productId int, product *entities.ProductInfo)
 	//удание старых ключевых слов продукта
 	queryDeleteInterests := fmt.Sprintf(
 		`DELETE FROM %s WHERE %s = $1`,
-		productTagsTable, productIdField,
+		productKwTable, productIdField,
 	)
 	if _, err := tgx.Exec(queryDeleteInterests, productId); err != nil {
 		tgx.Rollback()
@@ -162,7 +162,7 @@ func (p *PostgresDB) DeleteProduct(productId int) error {
 	//удание старых ключевых слов продукта
 	queryDeleteInterests := fmt.Sprintf(
 		`DELETE FROM %s WHERE %s = $1`,
-		productTagsTable, productIdField,
+		productKwTable, productIdField,
 	)
 	if _, err := tgx.Exec(queryDeleteInterests, productId); err != nil {
 		tgx.Rollback()
@@ -180,8 +180,8 @@ func addProductKeyWords(product *entities.ProductInfo, trx *sql.Tx, productId in
 		var keyWordId int
 		//формируем запрос для добавления новой записи в таблицу tags
 		queryAddKeyWords := fmt.Sprintf(`INSERT INTO %s (%s) VALUES ($1) RETURNING %s`,
-			tagsTable,
-			tagNameField, id,
+			kwTable,
+			kwNameField, id,
 		)
 		//выполняем запрос
 		row := trx.QueryRow(queryAddKeyWords, keyWord)
@@ -194,8 +194,8 @@ func addProductKeyWords(product *entities.ProductInfo, trx *sql.Tx, productId in
 		//формируем запрос для добавления новой записи в таблицу products_tags
 		querryKeyWordsProduct := fmt.Sprintf(
 			`INSERT INTO %s (%s, %s) VALUES ($1, $2)`,
-			productTagsTable,
-			tagIdField, productIdField,
+			productKwTable,
+			kwIdField, productIdField,
 		)
 		//добавляем ид юзера и его интерес в таблицу user_interests
 		if _, err := trx.Exec(querryKeyWordsProduct, keyWordId, productId); err != nil {

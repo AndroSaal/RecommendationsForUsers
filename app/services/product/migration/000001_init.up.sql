@@ -5,15 +5,15 @@ CREATE TABLE IF NOT EXISTS products (
     prd_status VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS product_tags (
+CREATE TABLE IF NOT EXISTS keyWords (
     id SERIAL PRIMARY KEY,
-    product_id INTEGER NOT NULL,
-    tag_id INTEGER NOT NULL,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE 
-    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+    kw_name VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS tags (
+CREATE TABLE IF NOT EXISTS product_keyWord (
     id SERIAL PRIMARY KEY,
-    tag_name VARCHAR(255) NOT NULL,
+    product_id INTEGER NOT NULL,
+    kw_id INTEGER NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (kw_id) REFERENCES keyWords(id) ON DELETE CASCADE
 );

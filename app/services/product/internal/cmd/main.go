@@ -21,8 +21,8 @@ import (
 )
 
 func main() {
-	//з агрузка переменных окружения
-	env := config.MustLoadEnv()
+	//загрузка переменных окружения
+	env := config.LoadEnv()
 
 	// логгер
 	logger := mylog.MustNewLogger(env)
