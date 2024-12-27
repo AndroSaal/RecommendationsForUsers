@@ -40,12 +40,14 @@ func (c *Consumer) Consume(handler service.KafkaHandler, ctx context.Context) {
 	go func() {
 		for {
 			select {
-			case msg := <-responseCh:
-				switch msg.Topic {
-				case "user_updates":
-					handler.AddUserData(msg)
-				case "product_updates":
-					handler.AddProductData(msg)
+			case msg, ok := <-responseCh:
+				if ok {
+					switch msg.Topic {
+					case "user_updates":
+						handler.AddUserData(msg)
+					case "product_updates":
+						handler.AddProductData(msg)
+					}
 				}
 			case <-ctx.Done():
 				c.log.Info("Closing all consumers by reason from server")
@@ -70,11 +72,11 @@ func ConsumeTopic(
 		select {
 		case msg := <-pc.Messages():
 			responseCh <- msg
-			c.log.Info("From Message received from topic", topic)
+			c.log.Info("From Message received from topic", topic, msg)
 		case err := <-pc.Errors():
-			c.log.Error("Error from consumer", err)
+			c.log.Error("Error from consumer", err.Error(), err)
 		case <-ctx.Done():
-			c.log.Info("Closing consumer by reason from server, topic", topic)
+			c.log.Info("Closing consumer by reason from server, topic", topic, 0)
 			return
 		}
 
