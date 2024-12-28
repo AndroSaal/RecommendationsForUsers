@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package user;
 
-option go_package = "github.com/AndroSaal/RecommendationsForUsers/app/services/recommendation/doc/myproto";
+option go_package = "github.com/AndroSaal/RecommendationsForUsers/app/services/analytics/doc/myproto";
 
 message UserUpdate {
     int64 userId = 1;
