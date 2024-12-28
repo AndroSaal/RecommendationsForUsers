@@ -45,6 +45,35 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:9092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    # environment:
+    #   - REDIS_PASSWORD=secret
+    #   - REDIS_USER=${REDIS_USER}
+    #   - REDIS_USER_PASSWORD=secret
+    ports:
+      - "6380:6379"
+    volumes:
+      - ./redisdata:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "$REDIS_PASSWORD", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+
   user-service:
     container_name: user-service
     image: user-service
@@ -64,6 +93,7 @@ services:
       - user-postgres
       - kafka1
       - zookeeper
+
   user-postgres:
     container_name: user-postgres
     image: postgres:14.8-alpine3.18
@@ -134,6 +164,7 @@ services:
       - DB_HOST=recommendation-postgres
       - KAFKA_ADDRS=kafka1:9092
       - KAFKA_TOPIC=user_updates,product_updates
+      - REDIS_ADDR=redis:6379
     ports:
       - "8082:8080"
     volumes:

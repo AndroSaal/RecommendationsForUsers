@@ -15,14 +15,15 @@ type Repository interface {
 // имплементация Repository интерфейса
 type RecomRepository struct {
 	relDB RelationalDataBase
-	kwDB  KeyValueDatabse
+	kvDB  KeyValueDatabse
 	log   *slog.Logger
 }
 
 // слой репощитория - взаимодействие с Базами данных
-func NewProductRepository(db *PostgresDB, log *slog.Logger) *RecomRepository {
+func NewProductRepository(db *PostgresDB, kvDB *RedisRepository, log *slog.Logger) *RecomRepository {
 	return &RecomRepository{
 		relDB: db,
+		kvDB:  kvDB,
 		log:   log,
 	}
 }
@@ -31,7 +32,7 @@ func (r *RecomRepository) GetRecommendations(userId int) ([]int, error) {
 	fi := "repository.RecomRepository.GetRecommendations"
 
 	//проверяем есть ли в кэше продукты для пользователя
-	prodictIds, err := r.kwDB.GetRecom(userId)
+	prodictIds, err := r.kvDB.GetRecom(userId)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return nil, err

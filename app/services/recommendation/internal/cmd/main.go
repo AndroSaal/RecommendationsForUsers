@@ -34,8 +34,11 @@ func main() {
 	dbConn := repository.NewPostgresDB(cfg.DBConf)
 	dbConn.DB.Close()
 
+	kvConn := repository.NewRedisDB(&cfg.KVConf)
+	kvConn.KVDB.Close()
+
 	// слой репозитория
-	repository := repository.NewProductRepository(dbConn, logger)
+	repository := repository.NewProductRepository(dbConn, kvConn, logger)
 
 	// слой сервиса
 	service := service.NewRecommendationService(repository, logger)

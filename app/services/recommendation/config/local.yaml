@@ -11,3 +11,7 @@ server:
   host: "localhost"
   env: "local"
   timeout: "10h"
+
+redis:
+  host: "localhost"
+  port: "6379"

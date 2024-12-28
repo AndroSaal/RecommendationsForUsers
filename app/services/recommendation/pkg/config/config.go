@@ -14,6 +14,7 @@ import (
 type ServiceConfig struct {
 	SrvConf ServerConfig
 	DBConf  DBConfig
+	KVConf  KeyValueConfig
 	Env     string `yaml:"env" env-default:"local"`
 }
 
@@ -33,6 +34,15 @@ type ServerConfig struct {
 	Host    string        `yaml:"host"`
 	Timeout time.Duration `yaml:"timeout"`
 	Env     string        `yaml:"env" env-default:"local"`
+}
+
+// конфигурация ключ-значение БД
+type KeyValueConfig struct {
+	Port string `yaml:"port"`
+	Host string `yaml:"host"`
+	Addr string `yaml:"addr"`
+	User string `yaml:"user"`
+	Pass string `yaml:"pass"`
 }
 
 // конфигурация REST API Сервера
@@ -124,6 +134,7 @@ func LoadConfig(path string, name string) (*ServiceConfig, error) {
 	var (
 		dbConf  DBConfig
 		srvConf ServerConfig
+		kvConf  KeyValueConfig
 	)
 
 	//инициализируем имя, папку и тип конфига
@@ -151,9 +162,17 @@ func LoadConfig(path string, name string) (*ServiceConfig, error) {
 		return nil, err
 	}
 
+	if err := viper.UnmarshalKey("redis", &kvConf); err != nil {
+		return nil, err
+	}
+	if kvConf.Addr = os.Getenv("REDIS_ADDR"); kvConf.Addr == "" {
+		kvConf.Addr = kvConf.Host + ":" + kvConf.Port
+	}
+
 	return &ServiceConfig{
 		SrvConf: srvConf,
 		DBConf:  dbConf,
+		KVConf:  kvConf,
 	}, nil
 
 }
