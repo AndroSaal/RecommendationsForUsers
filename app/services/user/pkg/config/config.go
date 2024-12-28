@@ -51,7 +51,7 @@ func MustLoadEnv() string {
 
 	//путь до файла .env
 	if err := godotenv.Load("config/.env"); err != nil {
-		panic(fi + ": " + err.Error())
+		log.Fatal(fi + ": " + err.Error())
 	}
 
 	env := os.Getenv("ENVIRONMENT")
@@ -146,12 +146,13 @@ func LoadConfig(path string, name string) (*ServiceConfig, error) {
 
 	//заполняем структуру сервера отправки писем
 	if err := viper.UnmarshalKey("mail", &mailConf); err != nil {
-		return nil, err
+		log.Printf("mail credentials are empty, mail sending option is desiable now")
 	}
 
 	//получаем пароль и логин для почты, с которой будем посылать письма
 	if mailConf.Login, mailConf.Password = getMailCredentials(); mailConf.Password == "" || mailConf.Login == "" {
-		return nil, errors.New("mail credentials are empty")
+		// return nil, errors.New("mail credentials are empty")
+		log.Printf("mail credentials are empty, mail sending option is desiable now")
 	}
 
 	//заполняем структуру ДБ

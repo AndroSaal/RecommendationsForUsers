@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS user_kw (
 );
 
 CREATE TABLE IF NOT EXISTS product_kw (
-    id SERIALL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL,
     kw_id INTEGER NOT NULL,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,

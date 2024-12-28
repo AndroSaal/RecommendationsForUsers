@@ -40,10 +40,10 @@ func (s *UserService) CreateUser(user *entities.UserInfo) (int, error) {
 		return 0, err
 	}
 
-	//отправка письма
+	//отправка письма - опциональная функция
 	if err := s.mail.SendMail(user.Email, code); err != nil {
 		s.log.Debug("%s: Error sending email: %v", fi, err)
-		return 0, err
+		// return 0, err
 	}
 
 	return id, nil

@@ -18,7 +18,7 @@ type RelationalDataBase interface {
 
 // имплементация RelationalDataBase интерфейса
 type PostgresDB struct {
-	db *sqlx.DB
+	DB *sqlx.DB
 }
 
 // установка соединения с базой, паника в случае ошиби
@@ -29,7 +29,7 @@ func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
 		cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.Dbname, cfg.Sslmode))
 
 	return &PostgresDB{
-		db: db,
+		DB: db,
 	}
 }
 
@@ -37,7 +37,7 @@ func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
 func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 
 	//начинаем транзакцию
-	trx, err := p.db.Begin()
+	trx, err := p.DB.Begin()
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 	)
 
 	//выполняем запрос
-	rows, err := p.db.Query(query, userId)
+	rows, err := p.DB.Query(query, userId)
 	if err != nil {
 		trx.Rollback()
 		return nil, err
@@ -75,7 +75,7 @@ func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 			productIdField, productsKwTable, kwIdField,
 		)
 		//выполняем запрос
-		rows, err := p.db.Query(query, interestId)
+		rows, err := p.DB.Query(query, interestId)
 		if err != nil {
 			trx.Rollback()
 			return nil, err
@@ -100,7 +100,7 @@ func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 
 func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) error {
 
-	tgx, err := p.db.Begin()
+	tgx, err := p.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) error {
 
 func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) error {
 
-	tgx, err := p.db.Begin()
+	tgx, err := p.DB.Begin()
 	if err != nil {
 		return err
 	}
