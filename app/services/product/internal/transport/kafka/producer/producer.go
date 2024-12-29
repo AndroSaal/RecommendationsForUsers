@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -17,9 +18,10 @@ type Producer struct {
 }
 
 func NewProducer(brokerAdressses []string, log *slog.Logger) (*Producer, error) {
-
+	fi := "transport.kafka.NewProducer"
 	producer, err := sarama.NewSyncProducer(brokerAdressses, InitConfig(brokerAdressses))
 	if err != nil {
+		log.Debug("%s: Error adding new user: %v", fi, err)
 		return nil, err
 	}
 
@@ -38,10 +40,12 @@ func InitConfig(brokerAdressses []string) *sarama.Config {
 }
 
 func (p *Producer) SendMessage(prdInfo entities.ProductInfo, action string) error {
+	fi := "transport.kafka.Producer.SendMessage"
+
 	topic := os.Getenv("KAFKA_TOPIC")
 
 	if topic == "" {
-		p.log.Error("KAFKA_TOPIC not set")
+		p.log.Error("%s: Error Getting topic: %v", fi, errors.New("env KAFKA_TOPIC not set"))
 		return fmt.Errorf("environment KAFKA_TOPIC not set")
 	}
 
@@ -59,6 +63,7 @@ func (p *Producer) SendMessage(prdInfo entities.ProductInfo, action string) erro
 
 	data, err := proto.Marshal(&userMassage)
 	if err != nil {
+		p.log.Error("%s: Error Marshal struct userMassage to protobuf: %v", fi, err)
 		return err
 	}
 
@@ -68,7 +73,7 @@ func (p *Producer) SendMessage(prdInfo entities.ProductInfo, action string) erro
 	})
 
 	if err != nil {
-		p.log.Error(err.Error())
+		p.log.Error("%s: Error sending userMassage to kafka: %v", fi, err)
 		return err
 	} else {
 		p.log.Info(fmt.Sprintf(
