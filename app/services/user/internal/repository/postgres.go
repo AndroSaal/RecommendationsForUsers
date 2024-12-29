@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"log"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/pkg/config"
@@ -26,10 +27,13 @@ type PostgresDB struct {
 // установка соединения с базой, паника в случае ошибки
 func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
 
-	DB := sqlx.MustConnect("postgres", fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s DBname=%s sslmode=%s",
+	DB, err := sqlx.Connect("postgres", fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.Dbname, cfg.Sslmode))
 
+	if err != nil {
+		log.Fatalf("Error connecting to database: %v", err)
+	}
 	return &PostgresDB{
 		DB: DB,
 	}

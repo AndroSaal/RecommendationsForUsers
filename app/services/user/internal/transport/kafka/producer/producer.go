@@ -17,9 +17,10 @@ type Producer struct {
 }
 
 func NewProducer(brokerAdressses []string, log *slog.Logger) (*Producer, error) {
-
+	fi := "transport.kafka.NewProducer"
 	producer, err := sarama.NewSyncProducer(brokerAdressses, InitConfig(brokerAdressses))
 	if err != nil {
+		log.Debug("%s: Error with making new producer: %v", fi, err)
 		return nil, err
 	}
 

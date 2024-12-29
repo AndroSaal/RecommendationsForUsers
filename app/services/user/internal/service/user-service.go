@@ -66,17 +66,39 @@ func (s *UserService) VerifyCode(userId int, code string) (bool, error) {
 
 // функция возвращает пользователя из базы по его id
 func (s *UserService) GetUserById(id int) (*entities.UserInfo, error) {
-	return s.repo.GetUserById(id)
+	fi := "internal.User.GetUserById"
+
+	user, err := s.repo.GetUserById(id)
+	if err != nil {
+		s.log.Debug(fmt.Sprintf("%s: %s", fi, err.Error()))
+		return nil, err
+
+	}
+	return user, nil
 }
 
 // функция возвращает пользователя из базы по его email
 func (s *UserService) GetUserByEmail(email string) (*entities.UserInfo, error) {
-	return s.repo.GetUserByEmail(email)
+	fi := "internal.User.GetUserByEmail"
+
+	user, err := s.repo.GetUserByEmail(email)
+	if err != nil {
+		s.log.Debug(fmt.Sprintf("%s: %s", fi, err.Error()))
+		return nil, err
+	}
+	return user, nil
 }
 
 // функция заменяет информацию о пользователе в базе по его id
 func (s *UserService) UpdateUser(userId int, user *entities.UserInfo) error {
-	return s.repo.UpdateUser(userId, user)
+	fi := "internal.User.UpdateUser"
+
+	if err := s.repo.UpdateUser(userId, user); err != nil {
+		s.log.Debug(fmt.Sprintf("%s: %s", fi, err.Error()))
+		return err
+
+	}
+	return nil
 }
 
 func generateCode() string {
