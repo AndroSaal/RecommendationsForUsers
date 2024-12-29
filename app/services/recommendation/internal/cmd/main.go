@@ -31,11 +31,11 @@ func main() {
 	cfg := config.MustLoadConfig()
 
 	// коннект к бд (Маст)
-	dbConn := repository.NewPostgresDB(cfg.DBConf)
-	dbConn.DB.Close()
+	dbConn := repository.NewPostgresDB(cfg.DBConf, logger)
+	defer dbConn.DB.Close()
 
 	kvConn := repository.NewRedisDB(&cfg.KVConf)
-	kvConn.KVDB.Close()
+	defer kvConn.KVDB.Close()
 
 	// слой репозитория
 	repository := repository.NewProductRepository(dbConn, kvConn, logger)
@@ -51,7 +51,7 @@ func main() {
 
 	//коннект к кафке
 	kafkaConn := connectToKafka(logger)
-	kafkaConn.Consume(service, ctxSig)
+	go kafkaConn.Consume(service, ctxSig)
 	defer kafkaConn.Consumer.Close()
 
 	// транспортный слой

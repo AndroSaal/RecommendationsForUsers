@@ -15,7 +15,7 @@ MIGR_NAME = init
 CONFIGPATH = ./config
 CONFIGNAME = local.yaml
 
-run : build
+run : clean build
 	./.bin/product  --config_path=$(CONFIGPATH) --config_file=$(CONFIGNAME)
 	
 build :

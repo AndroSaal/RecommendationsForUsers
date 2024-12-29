@@ -3,11 +3,12 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 
 	myproto "github.com/AndroSaal/RecommendationsForUsers/app/services/recommendation/internal/transport/kafka/pb"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/recommendation/pkg/config"
 	"github.com/jmoiron/sqlx"
-	pq "github.com/lib/pq"
+	_ "github.com/lib/pq"
 )
 
 type RelationalDataBase interface {
@@ -18,18 +19,20 @@ type RelationalDataBase interface {
 
 // имплементация RelationalDataBase интерфейса
 type PostgresDB struct {
-	DB *sqlx.DB
+	DB  *sqlx.DB
+	log *slog.Logger
 }
 
 // установка соединения с базой, паника в случае ошиби
-func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
+func NewPostgresDB(cfg config.DBConfig, log *slog.Logger) *PostgresDB {
 
 	db := sqlx.MustConnect("postgres", fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.Dbname, cfg.Sslmode))
 
 	return &PostgresDB{
-		DB: db,
+		DB:  db,
+		log: log,
 	}
 }
 
@@ -42,6 +45,15 @@ func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 		return nil, err
 	}
 
+	rowCheck := trx.QueryRow(`SELECT id FROM users WHERE id = $1`, userId)
+	if err := rowCheck.Scan(&userId); err != nil {
+		trx.Rollback()
+		if err == sql.ErrNoRows {
+			err = ErrNotFound
+		}
+		return nil, err
+	}
+
 	//формируем запрос для получения всех kw_id пользователя (id его интересов)
 	query := fmt.Sprintf(
 		`SELECT %s FROM %s WHERE %s = $1`,
@@ -49,15 +61,19 @@ func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 	)
 
 	//выполняем запрос
-	rows, err := p.DB.Query(query, userId)
+	rows, err := trx.Query(query, userId)
 	if err != nil {
 		trx.Rollback()
 		return nil, err
+	} else if err := rows.Err(); err != nil {
+		trx.Rollback()
+		return nil, err
+
 	}
 	defer rows.Close()
 
 	//заполняем слайс интересами пользователя
-	userInterests := make([]int, 3)
+	userInterests := make([]int, 0)
 	for rows.Next() {
 		var interestId int
 		if err := rows.Scan(&interestId); err != nil {
@@ -67,7 +83,9 @@ func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 		userInterests = append(userInterests, interestId)
 	}
 
-	userRecommendations := make([]int, 3)
+	p.log.Info("User with id (%d) have inter %v interests", userId, userInterests)
+
+	userRecommendations := make([]int, 0)
 	for _, interestId := range userInterests {
 		//формируем запрос для получения id продуктов, в которых есть ключевые слова пользователя
 		query := fmt.Sprintf(
@@ -75,7 +93,7 @@ func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 			productIdField, productsKwTable, kwIdField,
 		)
 		//выполняем запрос
-		rows, err := p.DB.Query(query, interestId)
+		rows, err := trx.Query(query, interestId)
 		if err != nil {
 			trx.Rollback()
 			return nil, err
@@ -99,7 +117,7 @@ func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 }
 
 func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) error {
-
+	fi := "repository.AddUserUpdate"
 	tgx, err := p.DB.Begin()
 	if err != nil {
 		return err
@@ -111,9 +129,8 @@ func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) error {
 		usersTable, idField,
 	)
 	if _, err := tgx.Exec(query, user.UserId); err != nil {
-
 		tgx.Rollback()
-		return err
+		return fmt.Errorf("%s: %s %v", fi, query, err)
 	}
 
 	//Добавление ключевых слов (интересов) пользователя в таблицу keyWords и таблицу-связку
@@ -156,60 +173,83 @@ func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) error {
 
 // функция для добавления kw в таблицу keyWords и таблицу-связку userKw или productKw в зависимости от параметра table
 func addKeyWords(id int, trx *sql.Tx, kw []string, table string) error {
+	fi := "repository.addKeyWords"
 	var idToinsert string
 
 	if table == productsKwTable {
 		idToinsert = productIdField
-	} else if table == usersTable {
+	} else if table == userKwTable {
 		idToinsert = userIdField
 	}
 	//удаление страых связей
 	query := fmt.Sprintf(
-		`DELETE FROM %s WHERE %s = $1 IF EXIST`,
+		`DELETE FROM %s WHERE %s = $1`,
 		table, idToinsert,
 	)
 	if _, err := trx.Exec(query, id); err != nil {
-		return err
+		return fmt.Errorf("%s: %s %v", fi, query, err)
 	}
 
 	for _, keyWord := range kw {
 		var keyWordId int
-		//формируем запрос для добавления новой записи в таблицу keyWords
-		queryAddKeyWords := fmt.Sprintf(
-			`INSERT INTO %s (%s) VALUES ($1) RETURNING %s`,
-			kwTable,
-			kwNameField, idField,
+		//проверям есть ли такой keyword уже в таблице keyWords
+		query := fmt.Sprintf(
+			`SELECT %s FROM %s WHERE %s = $1`,
+			idField, kwTable, kwNameField,
 		)
-		//выполняем запрос
-		row := trx.QueryRow(queryAddKeyWords, keyWord)
-
+		row := trx.QueryRow(query, keyWord)
 		//получем id интереса
 		if err := row.Scan(&keyWordId); err != nil {
-			//ошибка нарушения уникальности - интерес с таким именем уже есть
-			if err.(*pq.Error).Code == "23503" {
-				//ищем id существующего интереса
-				query := fmt.Sprintf(
-					`SELECT %s FROM %s WHERE %s = $1`,
-					idField, kwTable, kwNameField,
-				)
-				row := trx.QueryRow(query, keyWord)
-				if err := row.Scan(&keyWordId); err != nil {
-					return fmt.Errorf("can't get keyWord id even after select :-( : %v", err)
-				}
-			} else {
-				return fmt.Errorf("can't get keyWord id: %v", err)
+			//	произошла ошибка - возвращаем ее
+			if err != sql.ErrNoRows {
+				return fmt.Errorf("%s: %s %v", fi, query, err)
+			}
+			//	если нет в таблице такого keyWord - добавляем
+			keyWordId, err = addKeyWord(trx, keyWord)
+			if err != nil {
+				return fmt.Errorf("%s: INSERT %v", fi, err)
 			}
 		}
-
 		//добавление новых записей в таблицу связи
 		querryKeyWordsProduct := fmt.Sprintf(
-			`INSERT INTO %s (%s, %s) VALUES ($1, $2)`,
+			`INSERT INTO %s (%s, %s) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
 			table,
 			kwIdField, idToinsert,
 		)
 		if _, err := trx.Exec(querryKeyWordsProduct, keyWordId, id); err != nil {
-			return err
+			return fmt.Errorf("%s: %s %v", fi, querryKeyWordsProduct, err)
 		}
 	}
 	return nil
+}
+
+func addKeyWord(trx *sql.Tx, keyWord string) (int, error) {
+	var kwId int
+	//формируем запрос для добавления новой записи в таблицу keyWords
+	queryAddKeyWords := fmt.Sprintf(
+		`INSERT INTO %s (%s) VALUES ($1) RETURNING %s`,
+		kwTable,
+		kwNameField, idField,
+	)
+	//выполняем запрос
+	row := trx.QueryRow(queryAddKeyWords, keyWord)
+
+	//получем id интереса
+	if err := row.Scan(&kwId); err != nil {
+		// //ошибка нарушения уникальности - интерес с таким именем уже есть
+		// if err.(*pq.Error).Code == "23503" {
+		// 	//ищем id существующего интереса
+		// 	query := fmt.Sprintf(
+		// 		`SELECT %s FROM %s WHERE %s = $1`,
+		// 		idField, kwTable, kwNameField,
+		// 	)
+		// 	row := trx.QueryRow(query, keyWord)
+		// 	if err := row.Scan(kwId); err != nil {
+		// 		return fmt.Errorf("can't get keyWord id even after select :-( : %v", err)
+		// 	}
+		// } else {
+		return 0, fmt.Errorf("can't get keyWord %s: %v", queryAddKeyWords, err)
+		// }
+	}
+	return kwId, nil
 }

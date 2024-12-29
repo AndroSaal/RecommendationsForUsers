@@ -48,8 +48,9 @@ func (r *RecomRepository) GetRecommendations(userId int) ([]int, error) {
 		r.log.Error(fi + ": " + err.Error())
 		return nil, err
 	}
+	result := removeDuplicates(prodictIds)
 
-	return prodictIds, nil
+	return result, nil
 }
 
 func (r *RecomRepository) AddProductUpdate(product *myproto.ProductAction) error {
@@ -73,4 +74,18 @@ func (r *RecomRepository) AddUserUpdate(user *myproto.UserUpdate) error {
 		return err
 	}
 	return nil
+}
+
+func removeDuplicates(slice []int) []int {
+	keys := make(map[int]bool)
+	var result []int
+
+	for _, value := range slice {
+		if _, exists := keys[value]; !exists {
+			keys[value] = true
+			result = append(result, value)
+		}
+	}
+
+	return result
 }

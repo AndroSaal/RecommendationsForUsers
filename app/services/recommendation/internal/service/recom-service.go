@@ -30,23 +30,25 @@ func (s *RecommendationService) GetRecommendations(userId int) ([]int, error) {
 		s.log.Error("%s: Error trying get product ids: %v", fi, err)
 		return nil, err
 	}
+	if len(productIds) == 0 {
+		productIds = nil
+	}
+
 	return productIds, nil
 }
 
 func (s *RecommendationService) AddProductData(msg *sarama.ConsumerMessage) error {
 	fi := "service.RecommendationService.AddProductData"
-	var (
-		product *myproto.ProductAction
-	)
+	var product myproto.ProductAction
 
 	//из слайса байт в структуру
-	if err := proto.Unmarshal(msg.Value, product); err != nil {
+	if err := proto.Unmarshal(msg.Value, &product); err != nil {
 		s.log.Error("%s: Error trying Unmarshal product data: %v", fi, err)
 		return err
 	}
 
 	//отправляем структуру в бд
-	if err := s.repo.AddProductUpdate(product); err != nil {
+	if err := s.repo.AddProductUpdate(&product); err != nil {
 		s.log.Error("%s: Error trying add product data: %v", fi, err)
 		return err
 	}
@@ -57,18 +59,20 @@ func (s *RecommendationService) AddProductData(msg *sarama.ConsumerMessage) erro
 func (s *RecommendationService) AddUserData(msg *sarama.ConsumerMessage) error {
 	fi := "service.RecommendationService.AddUserData"
 	var (
-		user *myproto.UserUpdate
+		user myproto.UserUpdate
 	)
 
 	//из слайса байт в структуру
-	if err := proto.Unmarshal(msg.Value, user); err != nil {
+	if err := proto.Unmarshal(msg.Value, &user); err != nil {
 		s.log.Error("%s: Error trying Unmarshal user data: %v", fi, err)
 		return err
+	} else {
+		s.log.Info("%s: Unmarshal user data: %v", fi, user)
 	}
 
 	//отправляем структуру в бд
-	if err := s.repo.AddUserUpdate(user); err != nil {
-		s.log.Error("%s: Error tryingadd user data: %v", fi, err)
+	if err := s.repo.AddUserUpdate(&user); err != nil {
+		s.log.Error("%s: Error trying add user data: %v", fi, err)
 		return err
 	}
 

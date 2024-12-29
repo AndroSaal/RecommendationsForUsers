@@ -5,8 +5,8 @@ package user;
 option go_package = "github.com/AndroSaal/RecommendationsForUsers/app/services/recommendation/doc/myproto";
 
 message UserUpdate {
-    int64 userId = 1;
-    repeated string userInterests = 2;
+    int64 UserId = 1;
+    repeated string UserInterests = 2;
 }
 
 message ProductAction {

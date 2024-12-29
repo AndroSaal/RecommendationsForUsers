@@ -29,7 +29,7 @@ const (
 
 const (
 	//таблица
-	productsKwTable = "products_kw"
+	productsKwTable = "product_kw"
 	//её поля
 	//idField = "id" PK
 	productIdField = "product_id"

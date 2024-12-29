@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/repository"
@@ -44,7 +42,7 @@ func main() {
 	service := service.NewUserService(mail, repository, logger)
 
 	//коннект к кафке
-	kafkaConn := connectToKafka(logger)
+	kafkaConn := kafka.ConnectToKafka(logger)
 	defer kafkaConn.Producer.Close()
 
 	// транспортный слой
@@ -88,19 +86,4 @@ func main() {
 			return
 		}
 	}
-}
-
-func connectToKafka(loger *slog.Logger) *kafka.Producer {
-	fi := "main.connectToKafka"
-
-	str := os.Getenv("KAFKA_ADDRS")
-	addrs := strings.Split(str, ",")
-
-	p, err := kafka.NewProducer(addrs, loger)
-
-	if err != nil {
-		log.Fatal(fi + ":" + err.Error())
-	}
-
-	return p
 }

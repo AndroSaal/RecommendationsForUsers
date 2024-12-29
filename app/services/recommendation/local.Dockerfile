@@ -10,4 +10,4 @@ RUN apk add --no-cache make \
  && go install github.com/githubnemo/CompileDaemon
 
 # Пересобирать контейнер каждый раз, когда изменяется исходный код!
-ENTRYPOINT CompileDaemon -build="make build" -command="make"
+ENTRYPOINT CompileDaemon -build="make build" -command="make run"

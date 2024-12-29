@@ -2,8 +2,10 @@ package kafka
 
 import (
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
 	myproto "github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/kafka/pb"
@@ -77,4 +79,19 @@ func (p *Producer) SendMessage(usrInfo entities.UserInfo) error {
 	}
 
 	return nil
+}
+
+func ConnectToKafka(loger *slog.Logger) *Producer {
+	fi := "main.connectToKafka"
+
+	str := os.Getenv("KAFKA_ADDRS")
+	addrs := strings.Split(str, ",")
+
+	p, err := NewProducer(addrs, loger)
+
+	if err != nil {
+		log.Fatal(fi + ":" + err.Error())
+	}
+
+	return p
 }

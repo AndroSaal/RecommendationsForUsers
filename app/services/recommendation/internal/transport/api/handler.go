@@ -26,20 +26,28 @@ func NewHandler(service service.Service, log *slog.Logger) *Handler {
 func (h *Handler) getUserRecommendations(c *gin.Context) {
 	fi := "api.Handler.getUserRecommendations"
 	errCode := 0
-
 	//400
-	userInterface, ok := c.Get("userId")
-	if userInterface == nil || !ok {
-		errCode = http.StatusBadRequest
-		newErrorResponse(c, http.StatusBadRequest, "userId parameter does not exist in path")
-		return
-	}
+	// userInterface, ok := c.Get("userId")
+	// if userInterface == nil || !ok {
+	// 	errCode = http.StatusBadRequest
+	// 	newErrorResponse(c, http.StatusBadRequest, "userId parameter does not exist in path")
+	// 	return
+	// }
 
-	userId, ok := userInterface.(int)
-	if !ok {
+	// userId, ok := userInterface.(int)
+	// if !ok {
+	// 	errCode = http.StatusBadRequest
+	// 	newErrorResponse(c, http.StatusBadRequest, "userId parameter incorrect in path")
+	// 	return
+	// }
+
+	userId, err := strconv.Atoi(c.Param("userId"))
+	if err != nil {
 		errCode = http.StatusBadRequest
 		newErrorResponse(c, http.StatusBadRequest, "userId parameter incorrect in path")
 		return
+	} else {
+		h.log.Info("%s: Get response for User with Id %d", fi, userId)
 	}
 
 	if err := entities.ValidateUserId(userId); err != nil {
@@ -58,6 +66,11 @@ func (h *Handler) getUserRecommendations(c *gin.Context) {
 		errCode = http.StatusInternalServerError
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
+	} else if productIds == nil {
+		errCode = http.StatusNotFound
+		newErrorResponse(c, http.StatusNotFound, "recommendations for this user not found")
+		return
+
 	}
 
 	//200
