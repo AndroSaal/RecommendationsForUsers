@@ -3,7 +3,6 @@ module github.com/AndroSaal/RecommendationsForUsers/app/services/product
 go 1.23.1
 
 require (
-	github.com/AndroSaal/RecommendationsForUsers/app/services/user v0.0.0-20241224223859-31fd190e8eed
 	github.com/IBM/sarama v1.43.3
 	github.com/gin-gonic/gin v1.10.0
 	github.com/jmoiron/sqlx v1.4.0

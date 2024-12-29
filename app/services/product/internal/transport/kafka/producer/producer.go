@@ -3,8 +3,10 @@ package kafka
 import (
 	"errors"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/product/internal/entities"
 	myproto "github.com/AndroSaal/RecommendationsForUsers/app/services/product/internal/transport/kafka/pb"
@@ -82,4 +84,19 @@ func (p *Producer) SendMessage(prdInfo entities.ProductInfo, action string) erro
 	}
 
 	return nil
+}
+
+func ConnectToKafka(loger *slog.Logger) *Producer {
+	fi := "main.connectToKafka"
+
+	str := os.Getenv("KAFKA_ADDRS")
+	addrs := strings.Split(str, ",")
+
+	p, err := NewProducer(addrs, loger)
+
+	if err != nil {
+		log.Fatal(fi + ":" + err.Error())
+	}
+
+	return p
 }

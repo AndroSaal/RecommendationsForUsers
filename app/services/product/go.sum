@@ -1,7 +1,5 @@
 filippo.io/edwards25519 v1.1.0 h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=
 filippo.io/edwards25519 v1.1.0/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4VDT4=
-github.com/AndroSaal/RecommendationsForUsers/app/services/user v0.0.0-20241224223859-31fd190e8eed h1:o9gsCcRQ6n5WvEjSmMrtp7xy7x2ID3SVNkh/0h2HDDc=
-github.com/AndroSaal/RecommendationsForUsers/app/services/user v0.0.0-20241224223859-31fd190e8eed/go.mod h1:6lWoZs3l+3zLDBD1f4qQsJydOQwDEs2C/n6VkWhrRmU=
 github.com/IBM/sarama v1.43.3 h1:Yj6L2IaNvb2mRBop39N7mmJAHBVY3dTPncr3qGVkxPA=
 github.com/IBM/sarama v1.43.3/go.mod h1:FVIRaLrhK3Cla/9FfRF5X9Zua2KpS3SYIXxhac1H+FQ=
 github.com/bytedance/sonic v1.11.6 h1:oUp34TzMlL+OY1OUWxHqsdkgC/Zfc85zGqw9siXjrc0=
