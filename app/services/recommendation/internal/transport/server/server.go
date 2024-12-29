@@ -43,7 +43,7 @@ func (s *Server) Run() error {
 		return errors.New(fi + ":" + "cannot run server: " + err.Error())
 
 	}
-
+	s.Logger.Info(fi + ":" + "server stopped")
 	return nil
 
 }
