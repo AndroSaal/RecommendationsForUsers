@@ -45,6 +45,7 @@ func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 		return nil, err
 	}
 
+	//проверка, существует ли пользователь с таким id
 	rowCheck := trx.QueryRow(`SELECT id FROM users WHERE id = $1`, userId)
 	if err := rowCheck.Scan(&userId); err != nil {
 		trx.Rollback()
@@ -61,29 +62,33 @@ func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 	)
 
 	//выполняем запрос
-	rows, err := trx.Query(query, userId)
+	rowsU, err := trx.Query(query, userId)
 	if err != nil {
 		trx.Rollback()
 		return nil, err
-	} else if err := rows.Err(); err != nil {
+	} else if err := rowsU.Err(); err != nil {
 		trx.Rollback()
 		return nil, err
 
 	}
-	defer rows.Close()
+	defer rowsU.Close()
 
 	//заполняем слайс интересами пользователя
 	userInterests := make([]int, 0)
-	for rows.Next() {
+	for rowsU.Next() {
 		var interestId int
-		if err := rows.Scan(&interestId); err != nil {
+		if err := rowsU.Scan(&interestId); err != nil {
 			trx.Rollback()
 			return nil, err
 		}
-		userInterests = append(userInterests, interestId)
+		if interestId != 1 {
+			userInterests = append(userInterests, interestId)
+		} else {
+			continue
+		}
 	}
 
-	p.log.Info("User with id (%d) have inter %v interests", userId, userInterests)
+	p.log.Info("User with id (%d) have interests with id %v", userId, userInterests)
 
 	userRecommendations := make([]int, 0)
 	for _, interestId := range userInterests {
@@ -93,17 +98,17 @@ func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 			productIdField, productsKwTable, kwIdField,
 		)
 		//выполняем запрос
-		rows, err := trx.Query(query, interestId)
+		rowsP, err := p.DB.Query(query, interestId)
 		if err != nil {
 			trx.Rollback()
 			return nil, err
 		}
-		defer rows.Close()
+		defer rowsP.Close()
 
 		//заполняем слайс интересными пользователю продуктами
-		for rows.Next() {
+		for rowsP.Next() {
 			var productId int
-			if err := rows.Scan(&productId); err != nil {
+			if err := rowsP.Scan(&productId); err != nil {
 				trx.Rollback()
 				return nil, err
 			}
@@ -203,6 +208,8 @@ func addKeyWords(id int, trx *sql.Tx, kw []string, table string) error {
 			//	произошла ошибка - возвращаем ее
 			if err != sql.ErrNoRows {
 				return fmt.Errorf("%s: %s %v", fi, query, err)
+			} else if err == sql.ErrNoRows || keyWordId == 1 {
+				continue
 			}
 			//	если нет в таблице такого keyWord - добавляем
 			keyWordId, err = addKeyWord(trx, keyWord)

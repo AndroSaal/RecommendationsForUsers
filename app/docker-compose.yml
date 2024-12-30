@@ -92,7 +92,6 @@ services:
     depends_on:
       - user-postgres
       - kafka1
-      - zookeeper
 
   user-postgres:
     container_name: user-postgres
@@ -132,7 +131,6 @@ services:
     depends_on:
       - product-postgres
       - kafka1
-      - zookeeper
 
   product-postgres:
     container_name: product-postgres
@@ -172,7 +170,6 @@ services:
     depends_on:
       - recommendation-postgres
       - kafka1
-      - zookeeper
 
   recommendation-postgres:
     container_name: recommendation-postgres
