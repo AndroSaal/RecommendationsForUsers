@@ -6,6 +6,7 @@ require (
 	github.com/IBM/sarama v1.44.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
+	github.com/lib/pq v1.10.9
 	github.com/spf13/viper v1.19.0
 	google.golang.org/protobuf v1.36.1
 )

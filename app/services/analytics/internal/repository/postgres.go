@@ -3,12 +3,14 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	myproto "github.com/AndroSaal/RecommendationsForUsers/app/services/analytics/internal/transport/kafka/pb"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/analytics/pkg/config"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 type RelationalDataBase interface {
@@ -18,7 +20,8 @@ type RelationalDataBase interface {
 
 // имплементация RelationalDataBase интерфейса
 type PostgresDB struct {
-	DB *sqlx.DB
+	DB  *sqlx.DB
+	log *slog.Logger
 }
 
 // установка соединения с базой, паника в случае ошиби
@@ -74,6 +77,7 @@ func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) error {
 }
 
 func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) error {
+	fi := "repository.postgresDB.AddproductUpdate"
 
 	tgx, err := p.DB.Begin()
 	if err != nil {
@@ -103,6 +107,12 @@ func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) error {
 		return err
 	}
 
+	if product.Action == "delete" {
+		product.ProductKeyWords = append(product.ProductKeyWords, "DELETED")
+		if len(product.ProductKeyWords) != 1 {
+			p.log.Error("%s: len of keyWords at delete action is not 1: %v", fi, err)
+		}
+	}
 	//Добавление ключевых слов (интересов) пользователя в таблицу user_upadates
 	if err := addKeyWords(
 		timestamp, tgx, product.ProductKeyWords, productUpsetesTable); err != nil {
