@@ -45,6 +45,7 @@ func (s *ProductService) UpdateProduct(productId int, product *entities.ProductI
 	return nil
 }
 
+//функция удаляет информацию о существующем продукте
 func (s *ProductService) DeleteProduct(productId int) error {
 	fi := "service.ProductService.DeleteProduct"
 
