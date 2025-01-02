@@ -190,3 +190,42 @@ services:
       retries: 5
       start_period: 10s
     restart: always
+
+  analytics-service:
+    container_name: analytics-service
+    image: analytics-service
+    build:
+      context: ./services/analytics
+      dockerfile: local.Dockerfile
+    environment:
+      - DB_HOST=analytics-postgres
+      - KAFKA_ADDRS=kafka1:9092
+      - KAFKA_TOPIC=user_updates,product_updates
+      - REDIS_ADDR=redis:6379
+    ports:
+      - "8083:8080"
+    volumes:
+      - ./services/analytics:/usr/src/app
+    depends_on:
+      - analytics-postgres
+      - kafka1
+
+  analytics-postgres:
+    container_name: analytics-postgres
+    image: postgres:14.8-alpine3.18
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "qwerty"
+      PGSSLMODE: "disable"
+    volumes:
+      - ./services/analytics/migration/000001_init.up.sql:/docker-entrypoint-initdb.d/initdb.sql
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
