@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -25,22 +24,24 @@ type PostgresDB struct {
 }
 
 // установка соединения с базой, паника в случае ошиби
-func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
+func NewPostgresDB(cfg config.DBConfig, log *slog.Logger) *PostgresDB {
 
 	db := sqlx.MustConnect("postgres", fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.Dbname, cfg.Sslmode))
 
 	return &PostgresDB{
-		DB: db,
+		DB:  db,
+		log: log,
 	}
 }
 
 func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) (time.Time, error) {
+	fi := "repository.postgresDB.AddUserUpdate"
 
 	tgx, err := p.DB.Begin()
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, fmt.Errorf("%s: %w", fi, err)
 	}
 
 	//добавление id пользователя в табблицу users
@@ -50,28 +51,23 @@ func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) (time.Time, error) 
 	)
 	if _, err := tgx.Exec(query, user.UserId); err != nil {
 		tgx.Rollback()
-		return time.Time{}, err
+		return time.Time{}, fmt.Errorf("%s: %w", fi, err)
 	}
 	//Добавление информации о обновлении
 	query = fmt.Sprintf(
-		`INSERT INTO %s (%s) VALUES ($1) RETURNING %s`,
-		userTimestampsTable, userIdField, timestampField,
+		`INSERT INTO %s (%s, %s) VALUES ($1, $2) RETURNING %s`,
+		userUpdatesTable, userIdField, userInterestsField, timestampField,
 	)
-	row := tgx.QueryRow(query, user.UserId)
+	str := strings.Join(user.UserInterests, ",")
+	row := tgx.QueryRow(query, user.UserId, str)
 
 	var timestamp time.Time
 	if err := row.Scan(&timestamp); err != nil {
 		tgx.Rollback()
-		return time.Time{}, err
+		return time.Time{}, fmt.Errorf("%s: %w", fi, err)
 	}
 
-	//Добавление ключевых слов (интересов) пользователя в таблицу user_upadates
-	if err := addKeyWords(
-		timestamp, tgx, user.UserInterests, userUpdatesTable); err != nil {
-		tgx.Rollback()
-		return time.Time{}, err
-	}
-
+	p.log.Info(fmt.Sprintf("%s: SUCCESS added user update at %s", fi, timestamp))
 	tgx.Commit()
 	return timestamp, nil
 }
@@ -81,7 +77,7 @@ func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) (time.Time
 
 	tgx, err := p.DB.Begin()
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, fmt.Errorf("%s: %w", fi, err)
 	}
 
 	//добавление id пользователя в табблицу users
@@ -91,55 +87,29 @@ func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) (time.Time
 	)
 	if _, err := tgx.Exec(query, product.ProductId); err != nil {
 		tgx.Rollback()
-		return time.Time{}, err
+		return time.Time{}, fmt.Errorf("%s: %w", fi, err)
 	}
 
 	//Добавление информации о обновлении
 	query = fmt.Sprintf(
-		`INSERT INTO %s (%s) VALUES ($1) RETURNING %s`,
-		productsTimestampsTable, productIdField, timestampField,
+		`INSERT INTO %s (%s, %s) VALUES ($1, $2) RETURNING %s`,
+		productUpdatesTable, productIdField, kwField, timestampField,
 	)
-	row := tgx.QueryRow(query, product.ProductId)
+	var str string
+	if product.Action == "delete" {
+		str = "DELETED"
+	} else {
+		str = strings.Join(product.ProductKeyWords, ",")
+	}
+	row := tgx.QueryRow(query, product.ProductId, str)
 
 	var timestamp time.Time
 	if err := row.Scan(&timestamp); err != nil {
 		tgx.Rollback()
-		return time.Time{}, err
+		return time.Time{}, fmt.Errorf("%s: %w", fi, err)
 	}
-
-	if product.Action == "delete" {
-		product.ProductKeyWords = append(product.ProductKeyWords, "DELETED")
-		if len(product.ProductKeyWords) != 1 {
-			p.log.Error("%s: len of keyWords at delete action is not 1: %v", fi, err)
-		}
-	}
-	//Добавление ключевых слов (интересов) пользователя в таблицу user_upadates
-	if err := addKeyWords(
-		timestamp, tgx, product.ProductKeyWords, productUpsetesTable); err != nil {
-		tgx.Rollback()
-		return time.Time{}, err
-	}
+	p.log.Info(fmt.Sprintf("%s: SUCCESS added product update at %s", fi, timestamp))
 
 	tgx.Commit()
 	return timestamp, nil
-}
-
-func addKeyWords(timestamp time.Time, trx *sql.Tx, kw []string, table string) error {
-	var idToinsert string
-
-	if table == userUpdatesTable {
-		idToinsert = kwField
-	} else if table == productUpsetesTable {
-		idToinsert = userInterestsField
-	}
-
-	str := strings.Join(kw, ",")
-	query := fmt.Sprintf(
-		`INSERT INTO %s (%s, %s) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-		table, timestampField, idToinsert,
-	)
-	if _, err := trx.Exec(query, timestamp, str); err != nil {
-		return err
-	}
-	return nil
 }

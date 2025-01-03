@@ -15,7 +15,7 @@ import (
 type KeyValueDatabse interface {
 	SetUserUpdate(user *myproto.UserUpdate, timestamp time.Time) error
 	SetProductUpdate(product *myproto.ProductAction, timestamp time.Time) error
-	DelRecom(userId int) error
+	Del(id int) error
 }
 
 type RedisRepository struct {

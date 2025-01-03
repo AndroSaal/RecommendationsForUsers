@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"log/slog"
 
 	myproto "github.com/AndroSaal/RecommendationsForUsers/app/services/recommendation/internal/transport/kafka/pb"
@@ -35,11 +36,10 @@ func (r *RecomRepository) GetRecommendations(userId int) ([]int, error) {
 	prodictIds, err := r.kvDB.GetRecom(userId)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
-		return nil, err
 	}
 	//если есть возращаем
 	if prodictIds != nil {
-		r.log.Info("%s: Recom Get From redis UserID %d, Recommendations %w", fi, userId, prodictIds)
+		r.log.Info(fmt.Sprintf("%s: Recom Get From redis UserID %d, Recommendations %v", fi, userId, prodictIds))
 		return prodictIds, nil
 	}
 
@@ -65,6 +65,11 @@ func (r *RecomRepository) AddProductUpdate(product *myproto.ProductAction) error
 	fi := "repository.RecomRepository.AddProductUpdate"
 
 	err := r.relDB.AddProductUpdate(product)
+	if err != nil {
+		r.log.Error(fi + ": " + err.Error())
+		return err
+	}
+	err = r.kvDB.DelAll()
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err

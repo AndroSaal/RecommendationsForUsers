@@ -24,11 +24,14 @@ func main() {
 	cfg := config.MustLoadConfig()
 
 	// коннект к бд (Маст)
-	dbConn := repository.NewPostgresDB(cfg.DBConf)
-	dbConn.DB.Close()
+	dbConn := repository.NewPostgresDB(cfg.DBConf, logger)
+	defer dbConn.DB.Close()
+
+	kvConn := repository.NewRedisDB(&cfg.KVConf)
+	defer kvConn.KVDB.Close()
 
 	// слой репозитория
-	repository := repository.NewProductRepository(dbConn, logger)
+	repository := repository.NewAnalyticsRepository(dbConn, logger, kvConn)
 
 	// слой сервиса
 	service := service.NewAnalyticsService(repository, logger)

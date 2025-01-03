@@ -14,6 +14,7 @@ type KeyValueDatabse interface {
 	GetRecom(userId int) ([]int, error)
 	SetRecom(userId int, productIds []int) error
 	DelRecom(userId int) error
+	DelAll() error
 }
 
 type RedisRepository struct {
@@ -68,6 +69,15 @@ func (r *RedisRepository) DelRecom(userId int) error {
 
 	if err != nil {
 		return fmt.Errorf("error deleting product ids for user %d: %w", userId, err)
+	}
+	return nil
+}
+
+func (r *RedisRepository) DelAll() error {
+	_, err := r.KVDB.FlushAll().Result()
+
+	if err != nil {
+		return fmt.Errorf("error deleting all product ids: %w", err)
 	}
 	return nil
 }

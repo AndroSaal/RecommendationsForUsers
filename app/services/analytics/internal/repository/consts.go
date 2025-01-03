@@ -13,20 +13,12 @@ const (
 
 const (
 	//таблица
-	userTimestampsTable = "user_timestamps"
-	//её поля
-	//idField = "id" PK
-	userIdField    = "user_id"
-	timestampField = "timestamp"
-)
-
-const (
-	//таблица
 	userUpdatesTable = "user_updates"
 	//её поля
-	//timestampField = "timestamp" PK
+	//id PK
+	userIdField        = "user_id"
+	timestampField     = "timestamp_column"
 	userInterestsField = "interests"
-	//kwIdField      = "kw_id"
 )
 
 const (
@@ -38,19 +30,10 @@ const (
 
 const (
 	//таблица
-	productsTimestampsTable = "products_timestamps"
+	productUpdatesTable = "product_updates"
 	//её поля
 	//idField = "id" PK
 	productIdField = "product_id"
-	// timestampField = "timestamp"
-
-)
-
-const (
-	//таблица
-	productUpsetesTable = "product_updates"
-	//её поля
-	//timestampField = "timestamp" PK
-	kwField = "keyWords"
-	//kwIdField      = "kw_id"
+	//timestampField = "timestamp_column"
+	kwField = "keywords"
 )

@@ -12,30 +12,32 @@ type Repository interface {
 }
 
 // имплементация Repository интерфейса
-type RecomRepository struct {
+type AnalyticsRepository struct {
 	relDB RelationalDataBase
-	kwDB  KeyValueDatabse
+	kvdb  KeyValueDatabse
 	log   *slog.Logger
 }
 
 // слой репощитория - взаимодействие с Базами данных
-func NewProductRepository(db *PostgresDB, log *slog.Logger) *RecomRepository {
-	return &RecomRepository{
+func NewAnalyticsRepository(db *PostgresDB, log *slog.Logger, kv *RedisRepository) *AnalyticsRepository {
+	return &AnalyticsRepository{
 		relDB: db,
 		log:   log,
+		kvdb:  kv,
 	}
 }
 
-func (r *RecomRepository) AddProductUpdate(product *myproto.ProductAction) error {
+func (r *AnalyticsRepository) AddProductUpdate(product *myproto.ProductAction) error {
 	fi := "repository.RecomRepository.AddProductUpdate"
 
+	product.ProductKeyWords = removeDuplicates(product.ProductKeyWords)
 	timestamp, err := r.relDB.AddProductUpdate(product)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err
 	}
 
-	if err := r.kwDB.SetProductUpdate(product, timestamp); err != nil {
+	if err := r.kvdb.SetProductUpdate(product, timestamp); err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err
 	}
@@ -43,19 +45,34 @@ func (r *RecomRepository) AddProductUpdate(product *myproto.ProductAction) error
 	return nil
 }
 
-func (r *RecomRepository) AddUserUpdate(user *myproto.UserUpdate) error {
+func (r *AnalyticsRepository) AddUserUpdate(user *myproto.UserUpdate) error {
 	fi := "repository.RecomRepository.AddUserUpdate"
 
+	user.UserInterests = removeDuplicates(user.UserInterests)
 	timestamp, err := r.relDB.AddUserUpdate(user)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err
 	}
 
-	if err := r.kwDB.SetUserUpdate(user, timestamp); err != nil {
+	if err := r.kvdb.SetUserUpdate(user, timestamp); err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err
 	}
 
 	return nil
+}
+
+func removeDuplicates(slice []string) []string {
+	keys := make(map[string]bool)
+	var result []string
+
+	for _, value := range slice {
+		if _, exists := keys[value]; !exists && value != "" {
+			keys[value] = true
+			result = append(result, value)
+		}
+	}
+
+	return result
 }

@@ -88,7 +88,7 @@ func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 		}
 	}
 
-	p.log.Info("User with id (%d) have interests with id %v", userId, userInterests)
+	p.log.Info(fmt.Sprintf("User with id (%d) have interests with id %v", int(userId), userInterests))
 
 	userRecommendations := make([]int, 0)
 	for _, interestId := range userInterests {
@@ -144,7 +144,7 @@ func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) error {
 		p.log.Error("%s: Error adding User KeyWords (userId %d): %v", fi, user.UserId, err.Error(), err)
 		return err
 	} else {
-		p.log.Info("%s: User KeyWords %v (userId %d) added", fi, user.UserInterests, user.UserId)
+		p.log.Info(fmt.Sprintf("%s: User KeyWords %v (userId %d) added", fi, user.UserInterests, user.UserId))
 	}
 
 	tgx.Commit()
@@ -176,7 +176,7 @@ func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) error {
 		p.log.Error("%s: Error adding Product KeyWords (productId %d): %s", fi, product.ProductId, err.Error(), err)
 		return err
 	} else {
-		p.log.Info("%s: Product KeyWords %v (ProductId %d) added", fi, product.ProductKeyWords, product.ProductId)
+		p.log.Info(fmt.Sprintf("%s: Product KeyWords %v (ProductId %d) added", fi, product.ProductKeyWords, product.ProductId))
 	}
 
 	tgx.Commit()

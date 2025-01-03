@@ -1,23 +1,23 @@
 CREATE TABLE IF NOT EXISTS users (
-    id PRIMARY KEY
-)
+    id INTEGER PRIMARY KEY
+);
 
 CREATE TABLE IF NOT EXISTS products (
-    id PRIMARY KEY
-)
+    id INTEGER PRIMARY KEY
+);
 
 CREATE TABLE IF NOT EXISTS user_updates (
     id SERIAL PRIMARY KEY,
     user_id INTEGER, 
     timestamp_column TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INTERESTS VARCHAR(1024),
+    interests VARCHAR(1024),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-)
+);
 
-CREATE TABLE IF NOT EXISTS product_update (
+CREATE TABLE IF NOT EXISTS product_updates (
     id SERIAL PRIMARY KEY,
     product_id INTEGER,
     timestamp_column TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    keyWords VARCHAR(1024),
+    keywords VARCHAR(1024),
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-)
+);
