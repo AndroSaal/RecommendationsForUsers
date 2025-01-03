@@ -14,8 +14,8 @@ import (
 )
 
 type RelationalDataBase interface {
-	AddProductUpdate(product *myproto.ProductAction) error
-	AddUserUpdate(user *myproto.UserUpdate) error
+	AddProductUpdate(product *myproto.ProductAction) (time.Time, error)
+	AddUserUpdate(user *myproto.UserUpdate) (time.Time, error)
 }
 
 // имплементация RelationalDataBase интерфейса
@@ -36,11 +36,11 @@ func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
 	}
 }
 
-func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) error {
+func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) (time.Time, error) {
 
 	tgx, err := p.DB.Begin()
 	if err != nil {
-		return err
+		return time.Time{}, err
 	}
 
 	//добавление id пользователя в табблицу users
@@ -50,7 +50,7 @@ func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) error {
 	)
 	if _, err := tgx.Exec(query, user.UserId); err != nil {
 		tgx.Rollback()
-		return err
+		return time.Time{}, err
 	}
 	//Добавление информации о обновлении
 	query = fmt.Sprintf(
@@ -62,26 +62,26 @@ func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) error {
 	var timestamp time.Time
 	if err := row.Scan(&timestamp); err != nil {
 		tgx.Rollback()
-		return err
+		return time.Time{}, err
 	}
 
 	//Добавление ключевых слов (интересов) пользователя в таблицу user_upadates
 	if err := addKeyWords(
 		timestamp, tgx, user.UserInterests, userUpdatesTable); err != nil {
 		tgx.Rollback()
-		return err
+		return time.Time{}, err
 	}
 
 	tgx.Commit()
-	return nil
+	return timestamp, nil
 }
 
-func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) error {
-	fi := "repository.postgresDB.AddproductUpdate"
+func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) (time.Time, error) {
+	fi := "repository.postgresDB.AddProductUpdate"
 
 	tgx, err := p.DB.Begin()
 	if err != nil {
-		return err
+		return time.Time{}, err
 	}
 
 	//добавление id пользователя в табблицу users
@@ -91,7 +91,7 @@ func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) error {
 	)
 	if _, err := tgx.Exec(query, product.ProductId); err != nil {
 		tgx.Rollback()
-		return err
+		return time.Time{}, err
 	}
 
 	//Добавление информации о обновлении
@@ -104,7 +104,7 @@ func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) error {
 	var timestamp time.Time
 	if err := row.Scan(&timestamp); err != nil {
 		tgx.Rollback()
-		return err
+		return time.Time{}, err
 	}
 
 	if product.Action == "delete" {
@@ -117,11 +117,11 @@ func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) error {
 	if err := addKeyWords(
 		timestamp, tgx, product.ProductKeyWords, productUpsetesTable); err != nil {
 		tgx.Rollback()
-		return err
+		return time.Time{}, err
 	}
 
 	tgx.Commit()
-	return nil
+	return timestamp, nil
 }
 
 func addKeyWords(timestamp time.Time, trx *sql.Tx, kw []string, table string) error {

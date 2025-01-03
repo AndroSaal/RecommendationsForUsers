@@ -10,20 +10,20 @@ import (
 )
 
 // имплементация интерфейса Service
-type RecommendationService struct {
+type AnalyticsService struct {
 	repo repository.Repository
 	log  *slog.Logger
 }
 
-func NewRecommendationService(repo repository.Repository, log *slog.Logger) *RecommendationService {
-	return &RecommendationService{
+func NewAnalyticsService(repo repository.Repository, log *slog.Logger) *AnalyticsService {
+	return &AnalyticsService{
 		repo: repo,
 		log:  log,
 	}
 }
 
-func (s *RecommendationService) AddProductData(msg *sarama.ConsumerMessage) error {
-	fi := "service.RecommendationService.AddProductData"
+func (s *AnalyticsService) AddProductData(msg *sarama.ConsumerMessage) error {
+	fi := "service.AnalyticsServiceAnalyticsService.AddProductData"
 	var (
 		product *myproto.ProductAction
 	)
@@ -43,8 +43,8 @@ func (s *RecommendationService) AddProductData(msg *sarama.ConsumerMessage) erro
 	return nil
 }
 
-func (s *RecommendationService) AddUserData(msg *sarama.ConsumerMessage) error {
-	fi := "service.RecommendationService.AddUserData"
+func (s *AnalyticsService) AddUserData(msg *sarama.ConsumerMessage) error {
+	fi := "service.AnalyticsService.AddUserData"
 	var (
 		user *myproto.UserUpdate
 	)

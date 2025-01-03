@@ -29,12 +29,13 @@ func NewProductRepository(db *PostgresDB, log *slog.Logger) *RecomRepository {
 func (r *RecomRepository) AddProductUpdate(product *myproto.ProductAction) error {
 	fi := "repository.RecomRepository.AddProductUpdate"
 
-	if err := r.relDB.AddProductUpdate(product); err != nil {
+	timestamp, err := r.relDB.AddProductUpdate(product)
+	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err
 	}
 
-	if err := r.kwDB.SetProductUpdate(product); err != nil {
+	if err := r.kwDB.SetProductUpdate(product, timestamp); err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err
 	}
@@ -45,12 +46,13 @@ func (r *RecomRepository) AddProductUpdate(product *myproto.ProductAction) error
 func (r *RecomRepository) AddUserUpdate(user *myproto.UserUpdate) error {
 	fi := "repository.RecomRepository.AddUserUpdate"
 
-	if err := r.relDB.AddUserUpdate(user); err != nil {
+	timestamp, err := r.relDB.AddUserUpdate(user)
+	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err
 	}
 
-	if err := r.kwDB.SetUserUpdate(user); err != nil {
+	if err := r.kwDB.SetUserUpdate(user, timestamp); err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err
 	}

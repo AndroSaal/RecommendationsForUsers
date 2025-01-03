@@ -2,7 +2,10 @@ package kafka
 
 import (
 	"context"
+	"log"
 	"log/slog"
+	"os"
+	"strings"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/recommendation/internal/service"
 	"github.com/IBM/sarama"
@@ -88,4 +91,21 @@ func InitConfig() *sarama.Config {
 	config.Consumer.Return.Errors = true
 	config.Consumer.Offsets.Initial = sarama.OffsetOldest
 	return config
+}
+
+func ConnectToKafka(loger *slog.Logger) *Consumer {
+	fi := "main.connectToKafka"
+
+	str := os.Getenv("KAFKA_ADDRS")
+	tpc := os.Getenv("KAFKA_TOPIC")
+	addrs := strings.Split(str, ",")
+	topics := strings.Split(tpc, ",")
+
+	c, err := NewConsumer(addrs, topics, loger)
+
+	if err != nil {
+		log.Fatal(fi + ":" + err.Error())
+	}
+
+	return c
 }

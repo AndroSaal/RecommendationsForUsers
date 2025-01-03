@@ -82,7 +82,7 @@ func (p *PostgresDB) UpdateProduct(productId int, product *entities.ProductInfo)
 	}
 
 	//проверка что пользователь существует
-	rowCheck := tgx.QueryRow(`SELECT id FROM users WHERE id = $1`, productId)
+	rowCheck := tgx.QueryRow(`SELECT id FROM products WHERE id = $1`, productId)
 	if err := rowCheck.Scan(&productId); err != nil {
 		tgx.Rollback()
 		if err == sql.ErrNoRows {
@@ -139,7 +139,7 @@ func (p *PostgresDB) DeleteProduct(productId int) error {
 		return err
 	}
 	//проверка что пользователь существует
-	rowCheck := p.DB.QueryRow(`SELECT id FROM users WHERE id = $1`, productId)
+	rowCheck := p.DB.QueryRow(`SELECT id FROM products WHERE id = $1`, productId)
 	if err := rowCheck.Scan(&productId); err != nil {
 		if err == sql.ErrNoRows {
 			err = ErrNotFound

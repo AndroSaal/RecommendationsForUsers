@@ -27,7 +27,7 @@ func NewProductRepository(db *PostgresDB, log *slog.Logger) *ProductRepository {
 }
 
 func (r *ProductRepository) AddNewProduct(productInfo *entities.ProductInfo) (int, error) {
-	fi := "repository.UserRepository.AddNewUser"
+	fi := "repository.ProductRepository.AddNewProduct"
 
 	userId, err := r.relDB.AddNewProduct(productInfo)
 	if err != nil {
@@ -40,7 +40,7 @@ func (r *ProductRepository) AddNewProduct(productInfo *entities.ProductInfo) (in
 }
 
 func (r *ProductRepository) UpdateProduct(productId int, productInfo *entities.ProductInfo) error {
-	fi := "repository.UserRepository.UpdateUser"
+	fi := "repository.ProductRepository.UpdateProduct"
 
 	err := r.relDB.UpdateProduct(productId, productInfo)
 	if err != nil {
@@ -52,7 +52,7 @@ func (r *ProductRepository) UpdateProduct(productId int, productInfo *entities.P
 }
 
 func (r *ProductRepository) DeleteProduct(productId int) error {
-	fi := "repository.UserRepository.DeleteUser"
+	fi := "repository.ProductRepository.DeleteProduct"
 
 	err := r.relDB.DeleteProduct(productId)
 	if err != nil {

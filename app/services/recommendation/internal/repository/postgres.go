@@ -141,7 +141,10 @@ func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) error {
 	//Добавление ключевых слов (интересов) пользователя в таблицу keyWords и таблицу-связку
 	if err := addKeyWords(int(user.UserId), tgx, user.UserInterests, userKwTable); err != nil {
 		tgx.Rollback()
+		p.log.Error("%s: Error adding User KeyWords (userId %d): %v", fi, user.UserId, err.Error(), err)
 		return err
+	} else {
+		p.log.Info("%s: User KeyWords %v (userId %d) added", fi, user.UserInterests, user.UserId)
 	}
 
 	tgx.Commit()
@@ -149,6 +152,7 @@ func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) error {
 }
 
 func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) error {
+	fi := "repository.AddProductUpdate"
 
 	tgx, err := p.DB.Begin()
 	if err != nil {
@@ -165,11 +169,14 @@ func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) error {
 		return err
 	}
 
-	//Добавление ключевых слов (интересов) пользователя в таблицу keyWords и таблицу-связку
+	//Добавление ключевых слов продукта в таблицу keyWords и таблицу-связку
 	if err := addKeyWords(
 		int(product.ProductId), tgx, product.ProductKeyWords, productsKwTable); err != nil {
 		tgx.Rollback()
+		p.log.Error("%s: Error adding Product KeyWords (productId %d): %s", fi, product.ProductId, err.Error(), err)
 		return err
+	} else {
+		p.log.Info("%s: Product KeyWords %v (ProductId %d) added", fi, product.ProductKeyWords, product.ProductId)
 	}
 
 	tgx.Commit()
@@ -208,7 +215,7 @@ func addKeyWords(id int, trx *sql.Tx, kw []string, table string) error {
 			//	произошла ошибка - возвращаем ее
 			if err != sql.ErrNoRows {
 				return fmt.Errorf("%s: %s %v", fi, query, err)
-			} else if err == sql.ErrNoRows || keyWordId == 1 {
+			} else if keyWordId == 1 {
 				continue
 			}
 			//	если нет в таблице такого keyWord - добавляем
@@ -219,7 +226,7 @@ func addKeyWords(id int, trx *sql.Tx, kw []string, table string) error {
 		}
 		//добавление новых записей в таблицу связи
 		querryKeyWordsProduct := fmt.Sprintf(
-			`INSERT INTO %s (%s, %s) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+			`INSERT INTO %s (%s, %s) VALUES ($1, $2)`,
 			table,
 			kwIdField, idToinsert,
 		)
@@ -243,20 +250,7 @@ func addKeyWord(trx *sql.Tx, keyWord string) (int, error) {
 
 	//получем id интереса
 	if err := row.Scan(&kwId); err != nil {
-		// //ошибка нарушения уникальности - интерес с таким именем уже есть
-		// if err.(*pq.Error).Code == "23503" {
-		// 	//ищем id существующего интереса
-		// 	query := fmt.Sprintf(
-		// 		`SELECT %s FROM %s WHERE %s = $1`,
-		// 		idField, kwTable, kwNameField,
-		// 	)
-		// 	row := trx.QueryRow(query, keyWord)
-		// 	if err := row.Scan(kwId); err != nil {
-		// 		return fmt.Errorf("can't get keyWord id even after select :-( : %v", err)
-		// 	}
-		// } else {
 		return 0, fmt.Errorf("can't get keyWord %s: %v", queryAddKeyWords, err)
-		// }
 	}
 	return kwId, nil
 }

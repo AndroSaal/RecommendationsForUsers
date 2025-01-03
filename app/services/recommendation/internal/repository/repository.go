@@ -39,6 +39,7 @@ func (r *RecomRepository) GetRecommendations(userId int) ([]int, error) {
 	}
 	//если есть возращаем
 	if prodictIds != nil {
+		r.log.Info("%s: Recom Get From redis UserID %d, Recommendations %w", fi, userId, prodictIds)
 		return prodictIds, nil
 	}
 
@@ -50,6 +51,13 @@ func (r *RecomRepository) GetRecommendations(userId int) ([]int, error) {
 	}
 	result := removeDuplicates(prodictIds)
 
+	//добавляем в кэш полученную из реляцонной базы информацию
+	err = r.kvDB.SetRecom(userId, result)
+	if err != nil {
+		r.log.Error(fi + ": " + err.Error())
+		return nil, err
+	}
+	r.log.Info("%s: Recom GetFrom Postgres", fi, fi)
 	return result, nil
 }
 
@@ -69,6 +77,13 @@ func (r *RecomRepository) AddUserUpdate(user *myproto.UserUpdate) error {
 	fi := "repository.RecomRepository.AddUserUpdate"
 
 	err := r.relDB.AddUserUpdate(user)
+	if err != nil {
+		r.log.Error(fi + ": " + err.Error())
+		return err
+	}
+
+	//удаляем информацию о рекомендациях пользователя из кэша
+	err = r.kvDB.DelRecom(int(user.UserId))
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err

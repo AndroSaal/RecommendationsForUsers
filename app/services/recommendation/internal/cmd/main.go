@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/recommendation/internal/repository"
@@ -50,7 +48,7 @@ func main() {
 	defer stop()
 
 	//коннект к кафке
-	kafkaConn := connectToKafka(logger)
+	kafkaConn := kafka.ConnectToKafka(logger)
 	go kafkaConn.Consume(service, ctxSig)
 	defer kafkaConn.Consumer.Close()
 
@@ -89,21 +87,4 @@ func main() {
 			return
 		}
 	}
-}
-
-func connectToKafka(loger *slog.Logger) *kafka.Consumer {
-	fi := "main.connectToKafka"
-
-	str := os.Getenv("KAFKA_ADDRS")
-	tpc := os.Getenv("KAFKA_TOPIC")
-	addrs := strings.Split(str, ",")
-	topics := strings.Split(tpc, ",")
-
-	c, err := kafka.NewConsumer(addrs, topics, loger)
-
-	if err != nil {
-		log.Fatal(fi + ":" + err.Error())
-	}
-
-	return c
 }

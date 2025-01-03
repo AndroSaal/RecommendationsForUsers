@@ -31,7 +31,7 @@ func main() {
 	repository := repository.NewProductRepository(dbConn, logger)
 
 	// слой сервиса
-	service := service.NewRecommendationService(repository, logger)
+	service := service.NewAnalyticsService(repository, logger)
 
 	// обработка остановки по сигналу
 	ctxSig, stop := signal.NotifyContext(

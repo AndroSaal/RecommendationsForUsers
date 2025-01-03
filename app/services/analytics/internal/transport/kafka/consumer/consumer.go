@@ -40,24 +40,24 @@ func (c *Consumer) Consume(handler service.KafkaHandler, ctx context.Context) {
 	//подписываемся на обновления второго топика
 	go ConsumeTopic(c, c.topics[1], ctx, responseCh)
 	//обрабатываем ответы из топиков
-	go func() {
-		for {
-			select {
-			case msg, ok := <-responseCh:
-				if ok {
-					switch msg.Topic {
-					case "user_updates":
-						handler.AddUserData(msg)
-					case "product_updates":
-						handler.AddProductData(msg)
-					}
+	for {
+		select {
+		case msg, ok := <-responseCh:
+			if ok {
+				switch msg.Topic {
+				case "user_updates":
+					c.log.Info("Message about user_updates received from topic")
+					handler.AddUserData(msg)
+				case "product_updates":
+					c.log.Info("Message about product_updates received from topic")
+					handler.AddProductData(msg)
 				}
-			case <-ctx.Done():
-				c.log.Info("Closing all consumers by reason from server")
-				return
 			}
+		case <-ctx.Done():
+			c.log.Info("Closing all consumers by reason from server")
+			return
 		}
-	}()
+	}
 
 }
 
@@ -92,7 +92,6 @@ func InitConfig() *sarama.Config {
 	config.Consumer.Offsets.Initial = sarama.OffsetOldest
 	return config
 }
-
 func ConnectToKafka(loger *slog.Logger) *Consumer {
 	fi := "main.connectToKafka"
 
