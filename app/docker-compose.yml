@@ -79,7 +79,6 @@ services:
     image: user-service
     build:
       context: ./services/user
-
       dockerfile: local.Dockerfile
     environment:
       - DB_HOST=user-postgres

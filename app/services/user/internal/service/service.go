@@ -1,6 +1,10 @@
 package service
 
-import "github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
+import (
+	"context"
+
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/entities"
+)
 
 type Service interface {
 	UserCreator
@@ -10,22 +14,22 @@ type Service interface {
 }
 
 type UserCreator interface {
-	CreateUser(user *entities.UserInfo) (int, error)
+	CreateUser(ctx context.Context, user *entities.UserInfo) (int, error)
 }
 
 type UserGetter interface {
-	GetUserById(id int) (*entities.UserInfo, error)
-	GetUserByEmail(email string) (*entities.UserInfo, error)
+	GetUserById(ctx context.Context, id int) (*entities.UserInfo, error)
+	GetUserByEmail(ctx context.Context, email string) (*entities.UserInfo, error)
 }
 
 type UserUpdator interface {
-	UpdateUser(userId int, user *entities.UserInfo) error
+	UpdateUser(ctx context.Context, userId int, user *entities.UserInfo) error
 }
 
 type MailSender interface {
-	SendMail(email string, code string) error
+	SendMail(ctx context.Context, email string, code string) error
 }
 
 type CodeVerifactor interface {
-	VerifyCode(userId int, code string) (bool, error)
+	VerifyCode(ctx context.Context, userId int, code string) (bool, error)
 }

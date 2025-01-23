@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -11,10 +12,10 @@ import (
 )
 
 type KeyValueDatabse interface {
-	GetRecom(userId int) ([]int, error)
-	SetRecom(userId int, productIds []int) error
-	DelRecom(userId int) error
-	DelAll() error
+	GetRecom(ctx context.Context, userId int) ([]int, error)
+	SetRecom(ctx context.Context, userId int, productIds []int) error
+	DelRecom(ctx context.Context, userId int) error
+	DelAll(ctx context.Context) error
 }
 
 type RedisRepository struct {
@@ -29,7 +30,7 @@ func NewRedisDB(cfg *config.KeyValueConfig) *RedisRepository {
 	}
 }
 
-func (r *RedisRepository) GetRecom(userId int) ([]int, error) {
+func (r *RedisRepository) GetRecom(ctx context.Context, userId int) ([]int, error) {
 	userIdKey := strconv.Itoa(userId)
 	jsonData, err := r.KVDB.Get(userIdKey).Bytes()
 	if err == redis.Nil {
@@ -46,7 +47,7 @@ func (r *RedisRepository) GetRecom(userId int) ([]int, error) {
 	return productIds, nil
 }
 
-func (r *RedisRepository) SetRecom(userId int, productIds []int) error {
+func (r *RedisRepository) SetRecom(ctx context.Context, userId int, productIds []int) error {
 	userIdKey := strconv.Itoa(userId)
 
 	jsonData, err := json.Marshal(productIds)
@@ -62,7 +63,7 @@ func (r *RedisRepository) SetRecom(userId int, productIds []int) error {
 	return nil
 }
 
-func (r *RedisRepository) DelRecom(userId int) error {
+func (r *RedisRepository) DelRecom(ctx context.Context, userId int) error {
 	userIdKey := strconv.Itoa(userId)
 
 	_, err := r.KVDB.Del(userIdKey).Result()
@@ -73,7 +74,7 @@ func (r *RedisRepository) DelRecom(userId int) error {
 	return nil
 }
 
-func (r *RedisRepository) DelAll() error {
+func (r *RedisRepository) DelAll(ctx context.Context) error {
 	_, err := r.KVDB.FlushAll().Result()
 
 	if err != nil {

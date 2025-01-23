@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -13,9 +14,9 @@ import (
 )
 
 type KeyValueDatabse interface {
-	SetUserUpdate(user *myproto.UserUpdate, timestamp time.Time) error
-	SetProductUpdate(product *myproto.ProductAction, timestamp time.Time) error
-	Del(id int) error
+	SetUserUpdate(ctx context.Context, user *myproto.UserUpdate, timestamp time.Time) error
+	SetProductUpdate(ctx context.Context, product *myproto.ProductAction, timestamp time.Time) error
+	Del(ctx context.Context, id int) error
 }
 
 type RedisRepository struct {
@@ -30,7 +31,7 @@ func NewRedisDB(cfg *config.KeyValueConfig) *RedisRepository {
 	}
 }
 
-func (r *RedisRepository) SetProductUpdate(product *myproto.ProductAction, timestamp time.Time) error {
+func (r *RedisRepository) SetProductUpdate(ctx context.Context, product *myproto.ProductAction, timestamp time.Time) error {
 	productUpdate := entities.ProductFullUpdate{
 		Product:   product,
 		Timestamp: timestamp,
@@ -50,7 +51,7 @@ func (r *RedisRepository) SetProductUpdate(product *myproto.ProductAction, times
 	return nil
 }
 
-func (r *RedisRepository) SetUserUpdate(user *myproto.UserUpdate, timestamp time.Time) error {
+func (r *RedisRepository) SetUserUpdate(ctx context.Context, user *myproto.UserUpdate, timestamp time.Time) error {
 	userUpdate := entities.UserFullUpdate{
 		User:      user,
 		Timestamp: timestamp,
@@ -70,7 +71,7 @@ func (r *RedisRepository) SetUserUpdate(user *myproto.UserUpdate, timestamp time
 	return nil
 }
 
-func (r *RedisRepository) Del(id int) error {
+func (r *RedisRepository) Del(ctx context.Context, id int) error {
 	idKey := strconv.Itoa(id)
 
 	_, err := r.KVDB.Del(idKey).Result()

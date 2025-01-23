@@ -1,6 +1,10 @@
 package service
 
-import "github.com/IBM/sarama"
+import (
+	"context"
+
+	"github.com/IBM/sarama"
+)
 
 type Service interface {
 	RecomGetter
@@ -8,10 +12,10 @@ type Service interface {
 }
 
 type RecomGetter interface {
-	GetRecommendations(userId int) ([]int, error)
+	GetRecommendations(ctx context.Context, userId int) ([]int, error)
 }
 
 type KafkaHandler interface {
-	AddProductData(msg *sarama.ConsumerMessage) error
-	AddUserData(msg *sarama.ConsumerMessage) error
+	AddProductData(ctx context.Context, msg *sarama.ConsumerMessage) error
+	AddUserData(ctx context.Context, msg *sarama.ConsumerMessage) error
 }

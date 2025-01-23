@@ -16,6 +16,7 @@ import (
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/internal/transport/server"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/user/pkg/config"
 	mylog "github.com/AndroSaal/RecommendationsForUsers/app/services/user/pkg/log"
+	"github.com/pkg/errors"
 )
 
 func main() {
@@ -30,7 +31,13 @@ func main() {
 
 	// коннект к бд (Маст)
 	dbConn := repository.NewPostgresDB(cfg.DBConf)
-	defer dbConn.DB.Close()
+
+	//закрываем коннект, логируем ошибку
+	defer func() {
+		if err := dbConn.DB.Close(); err != nil {
+			logger.Error(err.Error())
+		}
+	}()
 
 	//Инициализация соединения к серверу почты
 	mail := service.NewMailSender(cfg.MailConf, logger)
@@ -43,7 +50,13 @@ func main() {
 
 	//коннект к кафке
 	kafkaConn := kafka.ConnectToKafka(logger)
-	defer kafkaConn.Producer.Close()
+
+	//закрываем продюсер, логируем ошибку
+	defer func() {
+		if err := kafkaConn.Producer.Close(); err != nil {
+			logger.Error(err.Error())
+		}
+	}()
 
 	// транспортный слой
 	handlers := api.NewHandler(service, logger, kafkaConn)
@@ -66,7 +79,7 @@ func main() {
 
 	// запуск сервера
 	go func() {
-		if err = srv.Run(); err != http.ErrServerClosed {
+		if err = srv.Run(); !errors.Is(err, http.ErrServerClosed) {
 			fmt.Println(fmt.Errorf("error occured while running server: " + err.Error()))
 		} else {
 			return

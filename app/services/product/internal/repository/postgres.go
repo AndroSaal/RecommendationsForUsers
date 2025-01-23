@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -11,9 +12,9 @@ import (
 )
 
 type RelationalDataBase interface {
-	AddNewProduct(product *entities.ProductInfo) (int, error)
-	UpdateProduct(productId int, uproduct *entities.ProductInfo) error
-	DeleteProduct(productId int) error
+	AddNewProduct(ctx context.Context, product *entities.ProductInfo) (int, error)
+	UpdateProduct(ctx context.Context, productId int, uproduct *entities.ProductInfo) error
+	DeleteProduct(ctx context.Context, productId int) error
 }
 
 // имплементация RelationalDataBase интерфейса
@@ -33,7 +34,7 @@ func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
 	}
 }
 
-func (p *PostgresDB) AddNewProduct(product *entities.ProductInfo) (int, error) {
+func (p *PostgresDB) AddNewProduct(ctx context.Context, product *entities.ProductInfo) (int, error) {
 
 	var productId int
 
@@ -74,7 +75,7 @@ func (p *PostgresDB) AddNewProduct(product *entities.ProductInfo) (int, error) {
 	return productId, nil
 }
 
-func (p *PostgresDB) UpdateProduct(productId int, product *entities.ProductInfo) error {
+func (p *PostgresDB) UpdateProduct(ctx context.Context, productId int, product *entities.ProductInfo) error {
 
 	tgx, err := p.DB.Begin()
 	if err != nil {
@@ -132,7 +133,7 @@ func (p *PostgresDB) UpdateProduct(productId int, product *entities.ProductInfo)
 	return nil
 }
 
-func (p *PostgresDB) DeleteProduct(productId int) error {
+func (p *PostgresDB) DeleteProduct(ctx context.Context, productId int) error {
 
 	tgx, err := p.DB.Begin()
 	if err != nil {

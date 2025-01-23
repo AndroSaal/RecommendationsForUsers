@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS product_updates;
+DROP TABLE IF EXISTS user_updates;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS users;

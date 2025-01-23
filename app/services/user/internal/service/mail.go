@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"log/slog"
@@ -22,7 +23,7 @@ func NewMailSender(config config.ServerMailConf, log *slog.Logger) *Mail {
 	}
 }
 
-func (m *Mail) SendMail(toEmail, mailBody string) error {
+func (m *Mail) SendMail(ctx context.Context, toEmail, mailBody string) error {
 	fi := "internal.Mail.SendMail"
 
 	//созздаем клиента для отправки письма

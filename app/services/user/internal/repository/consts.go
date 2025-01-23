@@ -21,7 +21,6 @@ const (
 	//таблица
 	codesTable = "codes"
 	//её поля
-	//id = "id" PK
 	userIdPole = "user_id"
 	codePole   = "email_code"
 )
@@ -30,8 +29,6 @@ const (
 	//таблица
 	userInterestsTable = "user_interests"
 	//её поля
-	//id = "id" PK
-	//userIdPole = "user_id"
 	interestIdPole = "interest_id"
 )
 
@@ -39,7 +36,6 @@ const (
 	//таблица
 	interestsTable = "interests"
 	//её поля
-	//id = "id" PK
 	intersestPole = "interest"
 )
 

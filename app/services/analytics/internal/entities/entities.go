@@ -3,7 +3,6 @@
 package entities
 
 import (
-	"errors"
 	"time"
 
 	myproto "github.com/AndroSaal/RecommendationsForUsers/app/services/analytics/internal/transport/kafka/pb"
@@ -21,13 +20,4 @@ type UserFullUpdate struct {
 type ProductFullUpdate struct {
 	Product   *myproto.ProductAction `json:"product"`
 	Timestamp time.Time              `json:"timestamp"`
-}
-
-func ValidateUserId(prId int) error {
-
-	if prId < 0 {
-		return errors.New("invalid user id: can`t be less 0")
-	}
-
-	return nil
 }

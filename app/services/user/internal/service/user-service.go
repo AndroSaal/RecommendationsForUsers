@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"math/rand"
@@ -27,21 +28,21 @@ func NewUserService(mail MailSender, repo repository.Repository, log *slog.Logge
 
 // функция вызывает метод репозитория по добавлению нового пользователя
 // если не возвращается ошибка -> отправляется письмо на указанную почту
-func (s *UserService) CreateUser(user *entities.UserInfo) (int, error) {
+func (s *UserService) CreateUser(ctx context.Context, user *entities.UserInfo) (int, error) {
 	fi := "internal.User.CreateUser"
 
 	//генерация кода
 	code := generateCode()
 
 	//добавление кода и пользователя в таблицы бд
-	id, err := s.repo.AddNewUser(user, code)
+	id, err := s.repo.AddNewUser(ctx, user, code)
 	if err != nil {
 		s.log.Debug("%s: Error adding new user: %v", fi, err)
 		return 0, err
 	}
 
 	//отправка письма - опциональная функция
-	if err := s.mail.SendMail(user.Email, code); err != nil {
+	if err := s.mail.SendMail(ctx, user.Email, code); err != nil {
 		s.log.Debug("%s: Error sending email: %v", fi, err)
 		// return 0, err
 	}
@@ -51,10 +52,10 @@ func (s *UserService) CreateUser(user *entities.UserInfo) (int, error) {
 
 // функция проверяет кода на валидность, если код совпадает с указанным в базе
 // поле is_email_verified в таблице users меняется на true
-func (s *UserService) VerifyCode(userId int, code string) (bool, error) {
+func (s *UserService) VerifyCode(ctx context.Context, userId int, code string) (bool, error) {
 	fi := "internal.User.VerifyCode"
 
-	isVerified, err := s.repo.VerifyCode(userId, code)
+	isVerified, err := s.repo.VerifyCode(ctx, userId, code)
 
 	if err != nil {
 		s.log.Debug(fmt.Sprintf("%s: %s", fi, err.Error()))
@@ -65,10 +66,10 @@ func (s *UserService) VerifyCode(userId int, code string) (bool, error) {
 }
 
 // функция возвращает пользователя из базы по его id
-func (s *UserService) GetUserById(id int) (*entities.UserInfo, error) {
+func (s *UserService) GetUserById(ctx context.Context, id int) (*entities.UserInfo, error) {
 	fi := "internal.User.GetUserById"
 
-	user, err := s.repo.GetUserById(id)
+	user, err := s.repo.GetUserById(ctx, id)
 	if err != nil {
 		s.log.Debug(fmt.Sprintf("%s: %s", fi, err.Error()))
 		return nil, err
@@ -78,10 +79,10 @@ func (s *UserService) GetUserById(id int) (*entities.UserInfo, error) {
 }
 
 // функция возвращает пользователя из базы по его email
-func (s *UserService) GetUserByEmail(email string) (*entities.UserInfo, error) {
+func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*entities.UserInfo, error) {
 	fi := "internal.User.GetUserByEmail"
 
-	user, err := s.repo.GetUserByEmail(email)
+	user, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
 		s.log.Debug(fmt.Sprintf("%s: %s", fi, err.Error()))
 		return nil, err
@@ -90,10 +91,10 @@ func (s *UserService) GetUserByEmail(email string) (*entities.UserInfo, error) {
 }
 
 // функция заменяет информацию о пользователе в базе по его id
-func (s *UserService) UpdateUser(userId int, user *entities.UserInfo) error {
+func (s *UserService) UpdateUser(ctx context.Context, userId int, user *entities.UserInfo) error {
 	fi := "internal.User.UpdateUser"
 
-	if err := s.repo.UpdateUser(userId, user); err != nil {
+	if err := s.repo.UpdateUser(ctx, userId, user); err != nil {
 		s.log.Debug(fmt.Sprintf("%s: %s", fi, err.Error()))
 		return err
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -63,7 +64,7 @@ func main() {
 
 	// запуск сервера
 	go func() {
-		if err = srv.Run(); err != http.ErrServerClosed {
+		if err = srv.Run(); !errors.Is(err, http.ErrServerClosed) {
 			fmt.Println(fmt.Errorf("error occured while running server: " + err.Error()))
 		} else {
 			return

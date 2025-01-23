@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/recommendation/internal/repository"
@@ -23,9 +24,9 @@ func NewRecommendationService(repo repository.Repository, log *slog.Logger) *Rec
 }
 
 // функция вызывает метод репозитория по добавлению нового продукта
-func (s *RecommendationService) GetRecommendations(userId int) ([]int, error) {
+func (s *RecommendationService) GetRecommendations(ctx context.Context, userId int) ([]int, error) {
 	fi := "service.RecommendationService.GetRecommendations"
-	productIds, err := s.repo.GetRecommendations(userId)
+	productIds, err := s.repo.GetRecommendations(ctx, userId)
 	if err != nil {
 		s.log.Error("%s: Error trying get product ids: %v", fi, err)
 		return nil, err
@@ -38,7 +39,7 @@ func (s *RecommendationService) GetRecommendations(userId int) ([]int, error) {
 	return productIds, nil
 }
 
-func (s *RecommendationService) AddProductData(msg *sarama.ConsumerMessage) error {
+func (s *RecommendationService) AddProductData(ctx context.Context, msg *sarama.ConsumerMessage) error {
 	fi := "service.RecommendationService.AddProductData"
 	var product myproto.ProductAction
 
@@ -51,7 +52,7 @@ func (s *RecommendationService) AddProductData(msg *sarama.ConsumerMessage) erro
 	s.log.Info("%s: Got user id %d, user interests %v", fi, product.ProductId, product.ProductKeyWords)
 
 	//отправляем структуру в бд
-	if err := s.repo.AddProductUpdate(&product); err != nil {
+	if err := s.repo.AddProductUpdate(ctx, &product); err != nil {
 		s.log.Error("%s: Error trying add product data: %v", fi, err)
 		return err
 	}
@@ -59,7 +60,7 @@ func (s *RecommendationService) AddProductData(msg *sarama.ConsumerMessage) erro
 	return nil
 }
 
-func (s *RecommendationService) AddUserData(msg *sarama.ConsumerMessage) error {
+func (s *RecommendationService) AddUserData(ctx context.Context, msg *sarama.ConsumerMessage) error {
 	fi := "service.RecommendationService.AddUserData"
 	var (
 		user myproto.UserUpdate
@@ -76,7 +77,7 @@ func (s *RecommendationService) AddUserData(msg *sarama.ConsumerMessage) error {
 	s.log.Info("%s: Got user id %d, user interests %v", fi, user.UserId, user.UserInterests)
 
 	//отправляем структуру в бд
-	if err := s.repo.AddUserUpdate(&user); err != nil {
+	if err := s.repo.AddUserUpdate(ctx, &user); err != nil {
 		s.log.Error("%s: Error trying add user data: %v", fi, err)
 		return err
 	}

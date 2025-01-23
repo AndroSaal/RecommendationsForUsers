@@ -34,7 +34,6 @@ func NewProducer(brokerAdressses []string, log *slog.Logger) (*Producer, error) 
 
 func InitConfig(brokerAdressses []string) *sarama.Config {
 	config := sarama.NewConfig()
-	// config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Retry.Max = 5
 	config.Producer.Return.Successes = true
 	return config

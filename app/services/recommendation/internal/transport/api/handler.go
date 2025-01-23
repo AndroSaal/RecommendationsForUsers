@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -26,20 +28,8 @@ func NewHandler(service service.Service, log *slog.Logger) *Handler {
 func (h *Handler) getUserRecommendations(c *gin.Context) {
 	fi := "api.Handler.getUserRecommendations"
 	errCode := 0
-	//400
-	// userInterface, ok := c.Get("userId")
-	// if userInterface == nil || !ok {
-	// 	errCode = http.StatusBadRequest
-	// 	newErrorResponse(c, http.StatusBadRequest, "userId parameter does not exist in path")
-	// 	return
-	// }
-
-	// userId, ok := userInterface.(int)
-	// if !ok {
-	// 	errCode = http.StatusBadRequest
-	// 	newErrorResponse(c, http.StatusBadRequest, "userId parameter incorrect in path")
-	// 	return
-	// }
+	ctx, cancel := context.WithCancel(c)
+	defer cancel()
 
 	userId, err := strconv.Atoi(c.Param("userId"))
 	if err != nil {
@@ -57,8 +47,8 @@ func (h *Handler) getUserRecommendations(c *gin.Context) {
 	}
 
 	//404 и 500
-	productIds, err := h.service.GetRecommendations(userId)
-	if err == repository.ErrNotFound {
+	productIds, err := h.service.GetRecommendations(ctx, userId)
+	if errors.Is(err, repository.ErrNotFound) {
 		errCode = http.StatusNotFound
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return

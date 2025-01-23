@@ -16,10 +16,10 @@ CONFIGPATH = ./config
 CONFIGNAME = local.yaml
 
 run : clean build
-	./.bin/user  --config_path=$(CONFIGPATH) --config_file=$(CONFIGNAME)
+	./.bin/recommendation  --config_path=$(CONFIGPATH) --config_file=$(CONFIGNAME)
 	
 build :
-	go build -o ./.bin/user ./internal/cmd/main.go
+	go build -o ./.bin/recommendation ./internal/cmd/main.go
 
 clean :
 	rm -rf ./.bin

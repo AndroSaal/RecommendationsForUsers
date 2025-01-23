@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -30,6 +32,9 @@ func (h *Handler) signUpUser(c *gin.Context) {
 	var usrInfo entities.UserInfo
 	fi := "api.Handler.signUpUser"
 	errCode := 0
+	ctx, cancel := context.WithCancel(c)
+	defer cancel()
+
 	//400
 	if err := c.BindJSON(&usrInfo); err != nil {
 		errCode = http.StatusBadRequest
@@ -43,9 +48,9 @@ func (h *Handler) signUpUser(c *gin.Context) {
 		return
 	}
 
-	id, err := h.service.CreateUser(&usrInfo)
+	id, err := h.service.CreateUser(ctx, &usrInfo)
 	//409 и 500
-	if err == repository.ErrAlreadyExists {
+	if errors.Is(err, repository.ErrAlreadyExists) {
 		errCode = http.StatusConflict
 		newErrorResponse(c, http.StatusConflict, err.Error())
 		return
@@ -76,6 +81,8 @@ func (h *Handler) signUpUser(c *gin.Context) {
 func (h *Handler) getUserById(c *gin.Context) {
 	fi := "api.Handler.getUserById"
 	errCode := 0
+	ctx, cancel := context.WithCancel(c)
+	defer cancel()
 
 	//400
 	userIdstr, ok := c.GetQuery("userId")
@@ -100,8 +107,8 @@ func (h *Handler) getUserById(c *gin.Context) {
 	}
 
 	//404 и 500
-	usr, err := h.service.GetUserById(userId)
-	if err == repository.ErrNotFound {
+	usr, err := h.service.GetUserById(ctx, userId)
+	if errors.Is(err, repository.ErrNotFound) {
 		errCode = http.StatusNotFound
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return
@@ -125,6 +132,8 @@ func (h *Handler) getUserById(c *gin.Context) {
 func (h *Handler) getUserByEmail(c *gin.Context) {
 	fi := "api.Handler.getUserByEmail"
 	errCode := 0
+	ctx, cancel := context.WithCancel(c)
+	defer cancel()
 
 	//400
 	email, ok := c.GetQuery("email")
@@ -142,8 +151,8 @@ func (h *Handler) getUserByEmail(c *gin.Context) {
 	}
 
 	//404 и 500
-	usr, err := h.service.GetUserByEmail(email)
-	if err == repository.ErrNotFound {
+	usr, err := h.service.GetUserByEmail(ctx, email)
+	if errors.Is(err, repository.ErrNotFound) {
 		errCode = http.StatusNotFound
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return
@@ -167,6 +176,8 @@ func (h *Handler) editUser(c *gin.Context) {
 	var usrInfo entities.UserInfo
 	fi := "api.Handler.editUser"
 	errCode := 0
+	ctx, cancel := context.WithCancel(c)
+	defer cancel()
 
 	//400
 	userIdStr := c.Param("userId")
@@ -196,7 +207,7 @@ func (h *Handler) editUser(c *gin.Context) {
 	}
 	//404 и 500
 	usrInfo.UsrId = userId
-	if err := h.service.UpdateUser(userId, &usrInfo); err == repository.ErrNotFound {
+	if err := h.service.UpdateUser(ctx, userId, &usrInfo); errors.Is(err, repository.ErrNotFound) {
 		errCode = http.StatusNotFound
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return
@@ -221,6 +232,9 @@ func (h *Handler) verifyEmail(c *gin.Context) {
 	userIdstr := c.Param("userId")
 	fi := "verifyEmail"
 	errCode := 0
+	ctx, cancel := context.WithCancel(c)
+	defer cancel()
+
 	//400
 	if userIdstr == "" {
 		errCode = http.StatusBadRequest
@@ -256,8 +270,8 @@ func (h *Handler) verifyEmail(c *gin.Context) {
 
 	}
 	//404 и 500
-	verified, err := h.service.VerifyCode(userId, code)
-	if err == repository.ErrNotFound {
+	verified, err := h.service.VerifyCode(ctx, userId, code)
+	if errors.Is(err, repository.ErrNotFound) {
 		errCode = http.StatusNotFound
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return

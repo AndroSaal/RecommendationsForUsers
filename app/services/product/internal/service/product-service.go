@@ -5,6 +5,7 @@ import (
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/product/internal/entities"
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/product/internal/repository"
+	"golang.org/x/net/context"
 )
 
 // имплементация интерфейса Service
@@ -21,10 +22,10 @@ func NewProductService(repo repository.Repository, log *slog.Logger) *ProductSer
 }
 
 // функция вызывает метод репозитория по добавлению нового продукта
-func (s *ProductService) CreateProduct(product *entities.ProductInfo) (int, error) {
+func (s *ProductService) CreateProduct(ctx context.Context, product *entities.ProductInfo) (int, error) {
 	fi := "service.ProductService.CreateProduct"
 
-	productId, err := s.repo.AddNewProduct(product)
+	productId, err := s.repo.AddNewProduct(ctx, product)
 	if err != nil {
 		s.log.Error("%s: Error Creating Product: %v", fi, err)
 		return 0, err
@@ -33,10 +34,10 @@ func (s *ProductService) CreateProduct(product *entities.ProductInfo) (int, erro
 }
 
 // функция заменяет информацию о пользователе в базе по его id
-func (s *ProductService) UpdateProduct(productId int, product *entities.ProductInfo) error {
+func (s *ProductService) UpdateProduct(ctx context.Context, productId int, product *entities.ProductInfo) error {
 	fi := "service.ProductService.UpdateProduct"
 
-	if err := s.repo.UpdateProduct(productId, product); err != nil {
+	if err := s.repo.UpdateProduct(ctx, productId, product); err != nil {
 		s.log.Error("%s: Error Updating Product: %v", fi, err)
 		return err
 
@@ -45,11 +46,11 @@ func (s *ProductService) UpdateProduct(productId int, product *entities.ProductI
 	return nil
 }
 
-//функция удаляет информацию о существующем продукте
-func (s *ProductService) DeleteProduct(productId int) error {
+// функция удаляет информацию о существующем продукте
+func (s *ProductService) DeleteProduct(ctx context.Context, productId int) error {
 	fi := "service.ProductService.DeleteProduct"
 
-	if err := s.repo.DeleteProduct(productId); err != nil {
+	if err := s.repo.DeleteProduct(ctx, productId); err != nil {
 		s.log.Error("%s: Error Deleting Product: %v", fi, err)
 		return err
 	}

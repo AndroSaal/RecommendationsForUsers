@@ -21,7 +21,7 @@ type Producer struct {
 
 func NewProducer(brokerAdressses []string, log *slog.Logger) (*Producer, error) {
 	fi := "transport.kafka.NewProducer"
-	producer, err := sarama.NewSyncProducer(brokerAdressses, InitConfig(brokerAdressses))
+	producer, err := sarama.NewSyncProducer(brokerAdressses, InitConfig())
 	if err != nil {
 		log.Debug("%s: Error adding new user: %v", fi, err)
 		return nil, err
@@ -33,9 +33,8 @@ func NewProducer(brokerAdressses []string, log *slog.Logger) (*Producer, error) 
 	}, nil
 }
 
-func InitConfig(brokerAdressses []string) *sarama.Config {
+func InitConfig() *sarama.Config {
 	config := sarama.NewConfig()
-	// config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Retry.Max = 5
 	config.Producer.Return.Successes = true
 	return config

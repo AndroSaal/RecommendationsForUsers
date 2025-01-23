@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/product/internal/entities"
@@ -13,9 +14,9 @@ type ProductRepository struct {
 }
 
 type Repository interface {
-	AddNewProduct(productInfo *entities.ProductInfo) (int, error)
-	UpdateProduct(productId int, productInfo *entities.ProductInfo) error
-	DeleteProduct(productId int) error
+	AddNewProduct(ctx context.Context, productInfo *entities.ProductInfo) (int, error)
+	UpdateProduct(ctx context.Context, productId int, productInfo *entities.ProductInfo) error
+	DeleteProduct(ctx context.Context, productId int) error
 }
 
 // слой репощитория - взаимодействие с Базами данных
@@ -26,10 +27,10 @@ func NewProductRepository(db *PostgresDB, log *slog.Logger) *ProductRepository {
 	}
 }
 
-func (r *ProductRepository) AddNewProduct(productInfo *entities.ProductInfo) (int, error) {
+func (r *ProductRepository) AddNewProduct(ctx context.Context, productInfo *entities.ProductInfo) (int, error) {
 	fi := "repository.ProductRepository.AddNewProduct"
 
-	userId, err := r.relDB.AddNewProduct(productInfo)
+	userId, err := r.relDB.AddNewProduct(ctx, productInfo)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return 0, err
@@ -39,10 +40,10 @@ func (r *ProductRepository) AddNewProduct(productInfo *entities.ProductInfo) (in
 	return userId, nil
 }
 
-func (r *ProductRepository) UpdateProduct(productId int, productInfo *entities.ProductInfo) error {
+func (r *ProductRepository) UpdateProduct(ctx context.Context, productId int, productInfo *entities.ProductInfo) error {
 	fi := "repository.ProductRepository.UpdateProduct"
 
-	err := r.relDB.UpdateProduct(productId, productInfo)
+	err := r.relDB.UpdateProduct(ctx, productId, productInfo)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err
@@ -51,10 +52,10 @@ func (r *ProductRepository) UpdateProduct(productId int, productInfo *entities.P
 	return nil
 }
 
-func (r *ProductRepository) DeleteProduct(productId int) error {
+func (r *ProductRepository) DeleteProduct(ctx context.Context, productId int) error {
 	fi := "repository.ProductRepository.DeleteProduct"
 
-	err := r.relDB.DeleteProduct(productId)
+	err := r.relDB.DeleteProduct(ctx, productId)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err

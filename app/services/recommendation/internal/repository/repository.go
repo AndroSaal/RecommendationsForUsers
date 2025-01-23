@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -8,9 +9,9 @@ import (
 )
 
 type Repository interface {
-	GetRecommendations(userId int) ([]int, error)
-	AddProductUpdate(product *myproto.ProductAction) error
-	AddUserUpdate(user *myproto.UserUpdate) error
+	GetRecommendations(ctx context.Context, userId int) ([]int, error)
+	AddProductUpdate(ctx context.Context, product *myproto.ProductAction) error
+	AddUserUpdate(ctx context.Context, user *myproto.UserUpdate) error
 }
 
 // имплементация Repository интерфейса
@@ -29,11 +30,11 @@ func NewProductRepository(db *PostgresDB, kvDB *RedisRepository, log *slog.Logge
 	}
 }
 
-func (r *RecomRepository) GetRecommendations(userId int) ([]int, error) {
+func (r *RecomRepository) GetRecommendations(ctx context.Context, userId int) ([]int, error) {
 	fi := "repository.RecomRepository.GetRecommendations"
 
 	//проверяем есть ли в кэше продукты для пользователя
-	prodictIds, err := r.kvDB.GetRecom(userId)
+	prodictIds, err := r.kvDB.GetRecom(ctx, userId)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 	}
@@ -44,7 +45,7 @@ func (r *RecomRepository) GetRecommendations(userId int) ([]int, error) {
 	}
 
 	//если в кэше нет, обращаемся в Базу
-	prodictIds, err = r.relDB.GetProductsByUserId(userId)
+	prodictIds, err = r.relDB.GetProductsByUserId(ctx, userId)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return nil, err
@@ -52,7 +53,7 @@ func (r *RecomRepository) GetRecommendations(userId int) ([]int, error) {
 	result := removeDuplicates(prodictIds)
 
 	//добавляем в кэш полученную из реляцонной базы информацию
-	err = r.kvDB.SetRecom(userId, result)
+	err = r.kvDB.SetRecom(ctx, userId, result)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return nil, err
@@ -61,15 +62,15 @@ func (r *RecomRepository) GetRecommendations(userId int) ([]int, error) {
 	return result, nil
 }
 
-func (r *RecomRepository) AddProductUpdate(product *myproto.ProductAction) error {
+func (r *RecomRepository) AddProductUpdate(ctx context.Context, product *myproto.ProductAction) error {
 	fi := "repository.RecomRepository.AddProductUpdate"
 
-	err := r.relDB.AddProductUpdate(product)
+	err := r.relDB.AddProductUpdate(ctx, product)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err
 	}
-	err = r.kvDB.DelAll()
+	err = r.kvDB.DelAll(ctx)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err
@@ -78,17 +79,17 @@ func (r *RecomRepository) AddProductUpdate(product *myproto.ProductAction) error
 	return nil
 }
 
-func (r *RecomRepository) AddUserUpdate(user *myproto.UserUpdate) error {
+func (r *RecomRepository) AddUserUpdate(ctx context.Context, user *myproto.UserUpdate) error {
 	fi := "repository.RecomRepository.AddUserUpdate"
 
-	err := r.relDB.AddUserUpdate(user)
+	err := r.relDB.AddUserUpdate(ctx, user)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err
 	}
 
 	//удаляем информацию о рекомендациях пользователя из кэша
-	err = r.kvDB.DelRecom(int(user.UserId))
+	err = r.kvDB.DelRecom(ctx, int(user.UserId))
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return err

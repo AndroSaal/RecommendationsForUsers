@@ -1,6 +1,10 @@
 package service
 
-import "github.com/AndroSaal/RecommendationsForUsers/app/services/product/internal/entities"
+import (
+	"context"
+
+	"github.com/AndroSaal/RecommendationsForUsers/app/services/product/internal/entities"
+)
 
 type Service interface {
 	ProductCreater
@@ -9,13 +13,13 @@ type Service interface {
 }
 
 type ProductCreater interface {
-	CreateProduct(user *entities.ProductInfo) (int, error)
+	CreateProduct(ctx context.Context, user *entities.ProductInfo) (int, error)
 }
 
 type ProductUpdater interface {
-	UpdateProduct(userId int, user *entities.ProductInfo) error
+	UpdateProduct(ctx context.Context, userId int, user *entities.ProductInfo) error
 }
 
 type ProductDeleter interface {
-	DeleteProduct(productId int) error
+	DeleteProduct(ctx context.Context, productId int) error
 }

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -13,8 +14,8 @@ import (
 )
 
 type RelationalDataBase interface {
-	AddProductUpdate(product *myproto.ProductAction) (time.Time, error)
-	AddUserUpdate(user *myproto.UserUpdate) (time.Time, error)
+	AddProductUpdate(ctx context.Context, product *myproto.ProductAction) (time.Time, error)
+	AddUserUpdate(ctx context.Context, user *myproto.UserUpdate) (time.Time, error)
 }
 
 // имплементация RelationalDataBase интерфейса
@@ -36,7 +37,7 @@ func NewPostgresDB(cfg config.DBConfig, log *slog.Logger) *PostgresDB {
 	}
 }
 
-func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) (time.Time, error) {
+func (p *PostgresDB) AddUserUpdate(ctx context.Context, user *myproto.UserUpdate) (time.Time, error) {
 	fi := "repository.postgresDB.AddUserUpdate"
 
 	tgx, err := p.DB.Begin()
@@ -72,7 +73,7 @@ func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) (time.Time, error) 
 	return timestamp, nil
 }
 
-func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) (time.Time, error) {
+func (p *PostgresDB) AddProductUpdate(ctx context.Context, product *myproto.ProductAction) (time.Time, error) {
 	fi := "repository.postgresDB.AddProductUpdate"
 
 	tgx, err := p.DB.Begin()

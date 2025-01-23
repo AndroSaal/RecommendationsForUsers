@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -30,6 +32,9 @@ func (h *Handler) addNewProduct(c *gin.Context) {
 	var prdInfo entities.ProductInfo
 	fi := "api.Handler.addNewProduct"
 	errCode := 0
+	ctx, cancel := context.WithCancel(c)
+	defer cancel()
+
 	//400
 	if err := c.BindJSON(&prdInfo); err != nil {
 		errCode = http.StatusBadRequest
@@ -43,7 +48,7 @@ func (h *Handler) addNewProduct(c *gin.Context) {
 		return
 	}
 
-	id, err := h.service.CreateProduct(&prdInfo)
+	id, err := h.service.CreateProduct(ctx, &prdInfo)
 	//500
 	if err != nil {
 		errCode = http.StatusInternalServerError
@@ -75,6 +80,8 @@ func (h *Handler) updateProduct(c *gin.Context) {
 	var prdInfo entities.ProductInfo
 	fi := "api.Handler.updateProduct"
 	errCode := 0
+	ctx, cancel := context.WithCancel(c)
+	defer cancel()
 
 	//400
 	prdIdStr := c.Param("productId")
@@ -104,7 +111,7 @@ func (h *Handler) updateProduct(c *gin.Context) {
 	}
 	//404 и 500
 	prdInfo.ProductId = prdId
-	if err := h.service.UpdateProduct(prdId, &prdInfo); err == repository.ErrNotFound {
+	if err := h.service.UpdateProduct(ctx, prdId, &prdInfo); errors.Is(err, repository.ErrNotFound) {
 		errCode = http.StatusNotFound
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return
@@ -130,6 +137,8 @@ func (h *Handler) deleteProduct(c *gin.Context) {
 	var prdInfo entities.ProductInfo
 	fi := "api.Handler.deleteProduct"
 	errCode := 0
+	ctx, cancel := context.WithCancel(c)
+	defer cancel()
 
 	//400
 	prdIdStr := c.Param("productId")
@@ -154,7 +163,7 @@ func (h *Handler) deleteProduct(c *gin.Context) {
 
 	//404 и 500
 	prdInfo.ProductId = prdId
-	if err := h.service.DeleteProduct(prdId); err == repository.ErrNotFound {
+	if err := h.service.DeleteProduct(ctx, prdId); errors.Is(err, repository.ErrNotFound) {
 		errCode = http.StatusNotFound
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log/slog"
@@ -12,9 +13,9 @@ import (
 )
 
 type RelationalDataBase interface {
-	GetProductsByUserId(userId int) ([]int, error)
-	AddProductUpdate(product *myproto.ProductAction) error
-	AddUserUpdate(user *myproto.UserUpdate) error
+	GetProductsByUserId(ctx context.Context, userId int) ([]int, error)
+	AddProductUpdate(ctx context.Context, product *myproto.ProductAction) error
+	AddUserUpdate(ctx context.Context, user *myproto.UserUpdate) error
 }
 
 // имплементация RelationalDataBase интерфейса
@@ -37,7 +38,7 @@ func NewPostgresDB(cfg config.DBConfig, log *slog.Logger) *PostgresDB {
 }
 
 // функция поиска id продуктов, в которых может быть заинтересован пользователь
-func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
+func (p *PostgresDB) GetProductsByUserId(ctx context.Context, userId int) ([]int, error) {
 
 	//начинаем транзакцию
 	trx, err := p.DB.Begin()
@@ -121,7 +122,7 @@ func (p *PostgresDB) GetProductsByUserId(userId int) ([]int, error) {
 	return userRecommendations, nil
 }
 
-func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) error {
+func (p *PostgresDB) AddUserUpdate(ctx context.Context, user *myproto.UserUpdate) error {
 	fi := "repository.AddUserUpdate"
 	tgx, err := p.DB.Begin()
 	if err != nil {
@@ -151,7 +152,7 @@ func (p *PostgresDB) AddUserUpdate(user *myproto.UserUpdate) error {
 	return nil
 }
 
-func (p *PostgresDB) AddProductUpdate(product *myproto.ProductAction) error {
+func (p *PostgresDB) AddProductUpdate(ctx context.Context, product *myproto.ProductAction) error {
 	fi := "repository.AddProductUpdate"
 
 	tgx, err := p.DB.Begin()

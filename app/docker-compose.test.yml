@@ -1,0 +1,77 @@
+services:
+  zookeeper:
+    # conteiner_name: zookeeper
+    image: confluentinc/cp-zookeeper
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - 2181:2181
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEPER_SERVER_ID: 1
+      ZOOKEEPER_INIT_ID: 3
+      ZOOKEEPER_SYNC_LIMIT: 4
+  
+  kafka-test:
+    container_name: kafka-test
+    hostname: kafka-test
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - 9091:9091
+    links:
+      - zookeeper
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: "kafka-test"
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-test:9092,PLAINTEXT_HOST://localhost:9091
+      KAFKA_CREATE_TOPICS: "user_updates:4:2,product_updates:4:2"
+
+  user-service-test:
+    container_name: user-service-test
+    image: user-service-test
+    build:
+      context: ./services/user
+      dockerfile: local.Dockerfile
+    environment:
+      - CONFIG_DIR=./config
+      - CONFIG_FILE=local.yaml
+      - DB_HOST=user-postgres-test
+      - DB_PASS=qwerty
+      - DB_USER=postgres
+      - DB_OPT_DC=disable
+      - DB_NAME=postgres
+      - DB_PORT=5432
+      - KAFKA_ADDRS=kafka-test:9092
+      - KAFKA_TOPIC=user_updates
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./services/user:/usr/src/app
+    depends_on:
+      - user-postgres-test
+      - kafka-test
+
+  user-postgres-test:
+    container_name: user-postgres-test
+    image: postgres:14.8-alpine3.18
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "qwerty"
+      PGSSLMODE: "disable"
+    volumes:
+      - ./services/user/migration/000001_init.up.sql:/docker-entrypoint-initdb.d/initdb.sql
+    ports:
+      - "5430:5430"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always

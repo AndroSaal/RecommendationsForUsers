@@ -47,10 +47,10 @@ func (c *Consumer) Consume(handler service.KafkaHandler, ctx context.Context) {
 				switch msg.Topic {
 				case "user_updates":
 					c.log.Info("Message about user_updates received from topic")
-					handler.AddUserData(msg)
+					handler.AddUserData(ctx, msg)
 				case "product_updates":
 					c.log.Info("Message about product_updates received from topic")
-					handler.AddProductData(msg)
+					handler.AddProductData(ctx, msg)
 				}
 			}
 		case <-ctx.Done():

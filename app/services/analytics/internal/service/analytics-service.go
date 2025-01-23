@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/analytics/internal/repository"
@@ -22,7 +23,7 @@ func NewAnalyticsService(repo repository.Repository, log *slog.Logger) *Analytic
 	}
 }
 
-func (s *AnalyticsService) AddProductData(msg *sarama.ConsumerMessage) error {
+func (s *AnalyticsService) AddProductData(ctx context.Context, msg *sarama.ConsumerMessage) error {
 	fi := "service.AnalyticsServiceAnalyticsService.AddProductData"
 	var product myproto.ProductAction
 
@@ -33,7 +34,7 @@ func (s *AnalyticsService) AddProductData(msg *sarama.ConsumerMessage) error {
 	}
 
 	//отправляем структуру в бд
-	if err := s.repo.AddProductUpdate(&product); err != nil {
+	if err := s.repo.AddProductUpdate(ctx, &product); err != nil {
 		s.log.Error(fi, ": ", "Error adding product entity: ", err.Error(), err)
 		return err
 	}
@@ -41,7 +42,7 @@ func (s *AnalyticsService) AddProductData(msg *sarama.ConsumerMessage) error {
 	return nil
 }
 
-func (s *AnalyticsService) AddUserData(msg *sarama.ConsumerMessage) error {
+func (s *AnalyticsService) AddUserData(ctx context.Context, msg *sarama.ConsumerMessage) error {
 	fi := "service.AnalyticsService.AddUserData"
 	var user myproto.UserUpdate
 
@@ -52,7 +53,7 @@ func (s *AnalyticsService) AddUserData(msg *sarama.ConsumerMessage) error {
 	}
 
 	//отправляем структуру в бд
-	if err := s.repo.AddUserUpdate(&user); err != nil {
+	if err := s.repo.AddUserUpdate(ctx, &user); err != nil {
 		s.log.Error(fi, ": ", "Error adding user entity: ", err.Error(), err)
 		return err
 	}

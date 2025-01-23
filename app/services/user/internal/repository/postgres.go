@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -12,11 +13,11 @@ import (
 )
 
 type RelationalDataBase interface {
-	AddNewUser(user *entities.UserInfo, code string) (int, error)
-	GetUserById(id int) (*entities.UserInfo, error)
-	GetUserByEmail(email string) (*entities.UserInfo, error)
-	VerifyCode(userId int, code string) (bool, error)
-	UpdateUser(userId int, user *entities.UserInfo) error
+	AddNewUser(ctx context.Context, user *entities.UserInfo, code string) (int, error)
+	GetUserById(ctx context.Context, id int) (*entities.UserInfo, error)
+	GetUserByEmail(ctx context.Context, email string) (*entities.UserInfo, error)
+	VerifyCode(ctx context.Context, userId int, code string) (bool, error)
+	UpdateUser(ctx context.Context, userId int, user *entities.UserInfo) error
 }
 
 // имплементация RelationalDataBase интерфейса
@@ -39,7 +40,7 @@ func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
 	}
 }
 
-func (p *PostgresDB) AddNewUser(user *entities.UserInfo, code string) (int, error) {
+func (p *PostgresDB) AddNewUser(ctx context.Context, user *entities.UserInfo, code string) (int, error) {
 
 	var userId int
 	//начинаем транзакцию
@@ -92,7 +93,7 @@ func (p *PostgresDB) AddNewUser(user *entities.UserInfo, code string) (int, erro
 	return userId, nil
 }
 
-func (p *PostgresDB) GetUserById(userId int) (*entities.UserInfo, error) {
+func (p *PostgresDB) GetUserById(ctx context.Context, userId int) (*entities.UserInfo, error) {
 	var userDB UserInfoForDB
 
 	tgx, err := p.DB.Begin()
@@ -167,7 +168,7 @@ func (p *PostgresDB) GetUserById(userId int) (*entities.UserInfo, error) {
 	}, nil
 }
 
-func (p *PostgresDB) GetUserByEmail(email string) (*entities.UserInfo, error) {
+func (p *PostgresDB) GetUserByEmail(ctx context.Context, email string) (*entities.UserInfo, error) {
 	var userId int
 
 	query := fmt.Sprintf(`SELECT %s FROM %s WHERE %s = $1`,
@@ -182,10 +183,10 @@ func (p *PostgresDB) GetUserByEmail(email string) (*entities.UserInfo, error) {
 		return nil, err
 	}
 
-	return p.GetUserById(userId)
+	return p.GetUserById(ctx, userId)
 }
 
-func (p *PostgresDB) VerifyCode(userId int, code string) (bool, error) {
+func (p *PostgresDB) VerifyCode(ctx context.Context, userId int, code string) (bool, error) {
 	var (
 		codeFromDB string
 	)
@@ -236,7 +237,7 @@ func (p *PostgresDB) VerifyCode(userId int, code string) (bool, error) {
 	return true, nil
 }
 
-func (p *PostgresDB) UpdateUser(userId int, user *entities.UserInfo) error {
+func (p *PostgresDB) UpdateUser(ctx context.Context, userId int, user *entities.UserInfo) error {
 
 	tgx, err := p.DB.Begin()
 	if err != nil {
@@ -325,7 +326,3 @@ func addUserInterests(user *entities.UserInfo, trx *sql.Tx, userId int) (int, er
 	}
 	return userId, nil
 }
-
-// func (p *PostgresDB) Close() {
-// 	p.DB.Close()
-// }

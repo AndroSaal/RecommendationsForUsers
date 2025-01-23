@@ -18,7 +18,6 @@ const (
 	//таблица
 	productKwTable = "product_keyWord"
 	//её поля
-	//id = "id" PK
 	productIdField = "product_id"
 	kwIdField      = "kw_id"
 )
@@ -27,6 +26,5 @@ const (
 	//таблица
 	kwTable = "keyWords"
 	//её поля
-	//id = "id" PK
 	kwNameField = "kw_name"
 )
