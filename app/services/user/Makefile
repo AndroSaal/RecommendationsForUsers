@@ -39,4 +39,4 @@ migr_down:
 	-verbose down
 
 test:
-	go test ./internal/repository -v
+	go test ./internal/repository ./internal/transport/api -v -cover

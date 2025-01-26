@@ -14,21 +14,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Handler struct {
+type UserHandler struct {
 	service service.Service
 	log     *slog.Logger
-	kafka   *kafka.Producer
+	kafka   kafka.Producer
 }
 
-func NewHandler(service service.Service, log *slog.Logger, kafka *kafka.Producer) *Handler {
-	return &Handler{
+func NewHandler(service service.Service, log *slog.Logger, kafka kafka.Producer) *UserHandler {
+	return &UserHandler{
 		service: service,
 		log:     log,
 		kafka:   kafka,
 	}
 }
 
-func (h *Handler) signUpUser(c *gin.Context) {
+func (h *UserHandler) signUpUser(c *gin.Context) {
 	var usrInfo entities.UserInfo
 	fi := "api.Handler.signUpUser"
 	errCode := 0
@@ -61,7 +61,7 @@ func (h *Handler) signUpUser(c *gin.Context) {
 	}
 
 	//200
-	c.AbortWithStatusJSON(http.StatusOK, map[string]interface{}{
+	c.AbortWithStatusJSON(http.StatusOK, map[string]int{
 		"userId": id,
 	})
 
@@ -78,7 +78,7 @@ func (h *Handler) signUpUser(c *gin.Context) {
 
 }
 
-func (h *Handler) getUserById(c *gin.Context) {
+func (h *UserHandler) getUserById(c *gin.Context) {
 	fi := "api.Handler.getUserById"
 	errCode := 0
 	ctx, cancel := context.WithCancel(c)
@@ -88,7 +88,7 @@ func (h *Handler) getUserById(c *gin.Context) {
 	userIdstr, ok := c.GetQuery("userId")
 	if !ok {
 		errCode = http.StatusBadRequest
-		newErrorResponse(c, http.StatusBadRequest, "email parametr does not exist in path")
+		newErrorResponse(c, http.StatusBadRequest, "userId parametr does not exist in path")
 		return
 
 	}
@@ -129,7 +129,7 @@ func (h *Handler) getUserById(c *gin.Context) {
 
 }
 
-func (h *Handler) getUserByEmail(c *gin.Context) {
+func (h *UserHandler) getUserByEmail(c *gin.Context) {
 	fi := "api.Handler.getUserByEmail"
 	errCode := 0
 	ctx, cancel := context.WithCancel(c)
@@ -172,7 +172,7 @@ func (h *Handler) getUserByEmail(c *gin.Context) {
 	}()
 }
 
-func (h *Handler) editUser(c *gin.Context) {
+func (h *UserHandler) editUser(c *gin.Context) {
 	var usrInfo entities.UserInfo
 	fi := "api.Handler.editUser"
 	errCode := 0
@@ -228,7 +228,7 @@ func (h *Handler) editUser(c *gin.Context) {
 	}()
 }
 
-func (h *Handler) verifyEmail(c *gin.Context) {
+func (h *UserHandler) verifyEmail(c *gin.Context) {
 	userIdstr := c.Param("userId")
 	fi := "verifyEmail"
 	errCode := 0

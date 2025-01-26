@@ -13,9 +13,9 @@ import (
 
 // имплементация интерфейса Service
 type UserService struct {
-	repo repository.Repository
-	log  *slog.Logger
-	mail MailSender
+	repo repository.Repository // интерфейс для взаимодействия со слоем репозиториев
+	log  *slog.Logger          // логгер для трейсов и логирования
+	mail MailSender            // интерфейс для отправки писем
 }
 
 func NewUserService(mail MailSender, repo repository.Repository, log *slog.Logger) *UserService {
@@ -29,22 +29,22 @@ func NewUserService(mail MailSender, repo repository.Repository, log *slog.Logge
 // функция вызывает метод репозитория по добавлению нового пользователя
 // если не возвращается ошибка -> отправляется письмо на указанную почту
 func (s *UserService) CreateUser(ctx context.Context, user *entities.UserInfo) (int, error) {
-	fi := "internal.User.CreateUser"
+	fi := "internal.User.CreateUser" // используется для отслеживания ошибок
 
-	//генерация кода
+	// генерация кода
 	code := generateCode()
 
-	//добавление кода и пользователя в таблицы бд
+	// добавление кода и пользователя в таблицы бд
 	id, err := s.repo.AddNewUser(ctx, user, code)
 	if err != nil {
 		s.log.Debug("%s: Error adding new user: %v", fi, err)
 		return 0, err
 	}
 
-	//отправка письма - опциональная функция
+	// отправка письма - опциональная функция,
+	// если возникла ошибка - выполнение программы продолжится
 	if err := s.mail.SendMail(ctx, user.Email, code); err != nil {
 		s.log.Debug("%s: Error sending email: %v", fi, err)
-		// return 0, err
 	}
 
 	return id, nil

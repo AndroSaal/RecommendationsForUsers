@@ -13,12 +13,17 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Producer struct {
+type Producer interface {
+	SendMessage(usrInfo entities.UserInfo) error
+	Close() error
+}
+
+type KafkaProducer struct {
 	Producer sarama.SyncProducer
 	log      *slog.Logger
 }
 
-func NewProducer(brokerAdressses []string, log *slog.Logger) (*Producer, error) {
+func NewProducer(brokerAdressses []string, log *slog.Logger) (Producer, error) {
 	fi := "transport.kafka.NewProducer"
 	producer, err := sarama.NewSyncProducer(brokerAdressses, InitConfig(brokerAdressses))
 	if err != nil {
@@ -26,7 +31,7 @@ func NewProducer(brokerAdressses []string, log *slog.Logger) (*Producer, error) 
 		return nil, err
 	}
 
-	return &Producer{
+	return &KafkaProducer{
 		Producer: producer,
 		log:      log,
 	}, nil
@@ -39,7 +44,7 @@ func InitConfig(brokerAdressses []string) *sarama.Config {
 	return config
 }
 
-func (p *Producer) SendMessage(usrInfo entities.UserInfo) error {
+func (p *KafkaProducer) SendMessage(usrInfo entities.UserInfo) error {
 	topic := os.Getenv("KAFKA_TOPIC")
 
 	if topic == "" {
@@ -80,7 +85,15 @@ func (p *Producer) SendMessage(usrInfo entities.UserInfo) error {
 	return nil
 }
 
-func ConnectToKafka(loger *slog.Logger) *Producer {
+func (p *KafkaProducer) Close() error {
+	err := p.Producer.Close()
+	if err != nil {
+		p.log.Error("error closing KafkaProducer" + err.Error())
+	}
+	return err
+}
+
+func ConnectToKafka(loger *slog.Logger) Producer {
 	fi := "main.connectToKafka"
 
 	str := os.Getenv("KAFKA_ADDRS")

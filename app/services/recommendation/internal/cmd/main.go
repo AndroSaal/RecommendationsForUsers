@@ -31,7 +31,12 @@ func main() {
 
 	// коннект к бд (Маст)
 	dbConn := repository.NewPostgresDB(cfg.DBConf, logger)
-	defer dbConn.DB.Close()
+	//закрываем коннект, логируем ошибку
+	defer func() {
+		if err := dbConn.DB.Close(); err != nil {
+			logger.Error(err.Error())
+		}
+	}()
 
 	kvConn := repository.NewRedisDB(&cfg.KVConf)
 	defer kvConn.KVDB.Close()
@@ -51,7 +56,13 @@ func main() {
 	//коннект к кафке
 	kafkaConn := kafka.ConnectToKafka(logger)
 	go kafkaConn.Consume(service, ctxSig)
-	defer kafkaConn.Consumer.Close()
+
+	// Закрываем коннект
+	defer func() {
+		if err := kafkaConn.Consumer.Close(); err != nil {
+			logger.Error(err.Error())
+		}
+	}()
 
 	// транспортный слой
 	handlers := api.NewHandler(service, logger)

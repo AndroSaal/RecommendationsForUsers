@@ -33,17 +33,24 @@ func (m *Mail) SendMail(ctx context.Context, toEmail, mailBody string) error {
 		return err
 	}
 	//закрываем клиента
-	defer client.Quit()
+	defer func() {
+		if err := client.Quit(); err != nil {
+			m.log.Error("%s : error quit client: %v", fi, err)
+		}
+	}()
 
-	//создаем writerа
+	//создаем writer
 	writer, err := client.Data()
 	if err != nil {
 		m.log.Debug(fmt.Sprintf("%s: %s", fi, err.Error()))
 		return err
 	}
 	//закрываем writer
-	defer writer.Close()
-
+	defer func() {
+		if err := writer.Close(); err != nil {
+			m.log.Error("%s : error close writer: %v", fi, err)
+		}
+	}()
 	//отправка письма
 	writer.Write([]byte(mailBody))
 

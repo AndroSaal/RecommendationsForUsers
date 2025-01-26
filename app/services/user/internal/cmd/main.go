@@ -53,7 +53,7 @@ func main() {
 
 	//закрываем продюсер, логируем ошибку
 	defer func() {
-		if err := kafkaConn.Producer.Close(); err != nil {
+		if err := kafkaConn.Close(); err != nil {
 			logger.Error(err.Error())
 		}
 	}()
