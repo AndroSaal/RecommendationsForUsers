@@ -52,10 +52,22 @@ func (m *MockService) GetUserByEmail(ctx context.Context, email string) (*entiti
 }
 
 func (m *MockService) UpdateUser(ctx context.Context, id int, usrInfo *entities.UserInfo) error {
+	if usrInfo.UsrDesc == "User Not Found" { //симуляция юзер уже существует
+		return repository.ErrNotFound
+	} else if usrInfo.UsrDesc == "Internal error" { //ошибка сервера
+		return errors.New("внутренняя ошибка сервера")
+	}
 	return nil
 }
 
 func (m *MockService) VerifyCode(ctx context.Context, userId int, code string) (bool, error) {
+	if userId == 1 {
+		return true, nil
+	} else if userId == 2 {
+		return false, errors.New("внутренняя ошибка сервера")
+	} else if userId == 3 {
+		return false, repository.ErrNotFound
+	}
 	return false, nil
 }
 
@@ -80,6 +92,22 @@ func NewMockKafka() *MockKafka {
 }
 
 // непосредственно тестирование
+
+func TestUserHandler_InitRoutes_Correct(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+
+	handler := NewHandler(
+		NewMockService(),
+		slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})),
+		NewMockKafka(),
+	)
+
+	// инициализируем маршруты
+	router := handler.InitRoutes()
+
+	// проверяем что маршруты инициализировались
+	assert.NotNil(t, router)
+}
 
 // Функция регистрауции нового пользователя
 // Корректный запрос - никаких ошибок
@@ -1496,6 +1524,30 @@ func TestUserHandler_GetUserByEmail_Correct(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Result().StatusCode)
 }
 
+func TestUserHandler_GetUserByEmail_IncorrectValidationEmail(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("GET", "/user/sign-up/email?email=testtest.com", nil)
+
+	handler.getUserByEmail(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	var response map[string]string
+	json.Unmarshal(w.Body.Bytes(), &response)
+	assert.Equal(t, "invalid email: does not math regexp", response["reason"])
+}
+
 func TestUserHandler_GetUserByEmail_CorrectButNotFound(t *testing.T) {
 	// Создаем наш хэндлер (Собственно транспортный слой)
 	handler := &UserHandler{
@@ -1619,4 +1671,631 @@ func TestUserHandler_EditUser_Correct(t *testing.T) {
 	handler.editUser(c)
 
 	assert.Equal(t, http.StatusOK, w.Result().StatusCode)
+}
+
+func TestUserHandler_EditUser_IncorrectNoParametr(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// структура для тела запроса
+	type UserInfo struct {
+		Username    string   `json:"username"`
+		Email       string   `json:"email"`
+		Password    string   `json:"password"`
+		Description string   `json:"description"`
+		Interests   []string `json:"interests"`
+		Age         int      `json:"age"`
+	}
+
+	// тело тестового запроса
+	userInfo := UserInfo{
+		Username:    "testTest",
+		Email:       "test@test.com",
+		Password:    "test0071",
+		Description: "test test and test",
+		Interests:   []string{"FirstTest", "Second Test"},
+		Age:         15,
+	}
+
+	json_data, err := json.Marshal(userInfo)
+	if err != nil {
+		t.Fatalf("Error marshalling json: %v", err)
+	}
+
+	reader := bytes.NewReader(json_data)
+
+	// Исправляем путь и добавляем параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/edit", reader)
+
+	handler.editUser(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	var response map[string]string
+	json.Unmarshal(w.Body.Bytes(), &response)
+	assert.Equal(t, "userId parametr does not exist in path", response["reason"])
+}
+
+func TestUserHandler_EditUser_IncorrectNoBody(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "1"},
+	}
+
+	handler.editUser(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	var response map[string]string
+	json.Unmarshal(w.Body.Bytes(), &response)
+	assert.Equal(t, "invalid request", response["reason"])
+}
+
+func TestUserHandler_EditUser_IncorrectNoOneOfField(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// структура для тела запроса
+	type UserInfo struct {
+		Username    string   `json:"username"`
+		Password    string   `json:"password"`
+		Description string   `json:"description"`
+		Interests   []string `json:"interests"`
+		Age         int      `json:"age"`
+	}
+
+	// тело тестового запроса
+	userInfo := UserInfo{
+		Username:    "testTest",
+		Password:    "test0071",
+		Description: "test test and test",
+		Interests:   []string{"FirstTest", "Second Test"},
+		Age:         15,
+	}
+
+	json_data, err := json.Marshal(userInfo)
+	if err != nil {
+		t.Fatalf("Error marshalling json: %v", err)
+	}
+
+	reader := bytes.NewReader(json_data)
+
+	// Исправляем путь и добавляем параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/edit", reader)
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "1"},
+	}
+
+	handler.editUser(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	var response map[string]string
+	json.Unmarshal(w.Body.Bytes(), &response)
+	assert.Equal(t, "Key: 'UserInfo.Email' Error:Field validation for 'Email' failed on the 'required' tag", response["reason"])
+}
+
+func TestUserHandler_EditUser_IncorrectValidationBody(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// структура для тела запроса
+	type UserInfo struct {
+		Username    string   `json:"username"`
+		Email       string   `json:"email"`
+		Password    string   `json:"password"`
+		Description string   `json:"description"`
+		Interests   []string `json:"interests"`
+		Age         int      `json:"age"`
+	}
+
+	// тело тестового запроса
+	userInfo := UserInfo{
+		Username:    "t",
+		Email:       "test@test.com",
+		Password:    "test0071",
+		Description: "test test and test",
+		Interests:   []string{"FirstTest", "Second Test"},
+		Age:         15,
+	}
+
+	json_data, err := json.Marshal(userInfo)
+	if err != nil {
+		t.Fatalf("Error marshalling json: %v", err)
+	}
+
+	reader := bytes.NewReader(json_data)
+
+	// Исправляем путь и добавляем параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/edit", reader)
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "1"},
+	}
+
+	handler.editUser(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	var response map[string]string
+	json.Unmarshal(w.Body.Bytes(), &response)
+	assert.Equal(t, "invalid username: too short, min length is 3", response["reason"])
+}
+
+func TestUserHandler_EditUser_IncorrectValidationParam(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// структура для тела запроса
+	type UserInfo struct {
+		Username    string   `json:"username"`
+		Email       string   `json:"email"`
+		Password    string   `json:"password"`
+		Description string   `json:"description"`
+		Interests   []string `json:"interests"`
+		Age         int      `json:"age"`
+	}
+
+	// тело тестового запроса
+	userInfo := UserInfo{
+		Username:    "t",
+		Email:       "test@test.com",
+		Password:    "test0071",
+		Description: "test test and test",
+		Interests:   []string{"FirstTest", "Second Test"},
+		Age:         15,
+	}
+
+	json_data, err := json.Marshal(userInfo)
+	if err != nil {
+		t.Fatalf("Error marshalling json: %v", err)
+	}
+
+	reader := bytes.NewReader(json_data)
+
+	// Исправляем путь и добавляем параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/edit", reader)
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "0"},
+	}
+
+	handler.editUser(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	var response map[string]string
+	json.Unmarshal(w.Body.Bytes(), &response)
+	assert.Equal(t, "invalid user id: can`t be less or equel 0", response["reason"])
+}
+
+func TestUserHandler_EditUser_IncorrectParam(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// структура для тела запроса
+	type UserInfo struct {
+		Username    string   `json:"username"`
+		Email       string   `json:"email"`
+		Password    string   `json:"password"`
+		Description string   `json:"description"`
+		Interests   []string `json:"interests"`
+		Age         int      `json:"age"`
+	}
+
+	// тело тестового запроса
+	userInfo := UserInfo{
+		Username:    "t",
+		Email:       "test@test.com",
+		Password:    "test0071",
+		Description: "test test and test",
+		Interests:   []string{"FirstTest", "Second Test"},
+		Age:         15,
+	}
+
+	json_data, err := json.Marshal(userInfo)
+	if err != nil {
+		t.Fatalf("Error marshalling json: %v", err)
+	}
+
+	reader := bytes.NewReader(json_data)
+
+	// Исправляем путь и добавляем параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/edit", reader)
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "Kot"},
+	}
+
+	handler.editUser(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	var response map[string]string
+	json.Unmarshal(w.Body.Bytes(), &response)
+	assert.Equal(t, "strconv.Atoi: parsing \"Kot\": invalid syntax", response["reason"])
+}
+
+func TestUserHandler_EditUser_CorrectButNotFound(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// структура для тела запроса
+	type UserInfo struct {
+		Username    string   `json:"username"`
+		Email       string   `json:"email"`
+		Password    string   `json:"password"`
+		Description string   `json:"description"`
+		Interests   []string `json:"interests"`
+		Age         int      `json:"age"`
+	}
+
+	// тело тестового запроса
+	userInfo := UserInfo{
+		Username:    "testTest",
+		Email:       "test@test.com",
+		Password:    "test0071",
+		Description: "User Not Found",
+		Interests:   []string{"FirstTest", "Second Test"},
+		Age:         15,
+	}
+
+	json_data, err := json.Marshal(userInfo)
+	if err != nil {
+		t.Fatalf("Error marshalling json: %v", err)
+	}
+
+	reader := bytes.NewReader(json_data)
+
+	// Исправляем путь и добавляем параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/edit", reader)
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "1"},
+	}
+
+	handler.editUser(c)
+
+	assert.Equal(t, http.StatusNotFound, w.Result().StatusCode)
+	var reponse map[string]string
+	json.Unmarshal(w.Body.Bytes(), &reponse)
+	assert.Equal(t, repository.ErrNotFound.Error(), reponse["reason"])
+}
+
+func TestUserHandler_EditUser_CorrectButInternalErorr(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// структура для тела запроса
+	type UserInfo struct {
+		Username    string   `json:"username"`
+		Email       string   `json:"email"`
+		Password    string   `json:"password"`
+		Description string   `json:"description"`
+		Interests   []string `json:"interests"`
+		Age         int      `json:"age"`
+	}
+
+	// тело тестового запроса
+	userInfo := UserInfo{
+		Username:    "testTest",
+		Email:       "test@test.com",
+		Password:    "test0071",
+		Description: "Internal error",
+		Interests:   []string{"FirstTest", "Second Test"},
+		Age:         15,
+	}
+
+	json_data, err := json.Marshal(userInfo)
+	if err != nil {
+		t.Fatalf("Error marshalling json: %v", err)
+	}
+
+	reader := bytes.NewReader(json_data)
+
+	// Исправляем путь и добавляем параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/edit", reader)
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "1"},
+	}
+
+	handler.editUser(c)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Result().StatusCode)
+	var reponse map[string]string
+	json.Unmarshal(w.Body.Bytes(), &reponse)
+	assert.Equal(t, "внутренняя ошибка сервера", reponse["reason"])
+}
+
+func TestUserHandler_VerifyEmail_Correct(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// путь и параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/verify-email?code=80744", nil)
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "1"},
+	}
+
+	handler.verifyEmail(c)
+
+	assert.Equal(t, http.StatusOK, w.Result().StatusCode)
+	var reponse map[string]bool
+	json.Unmarshal(w.Body.Bytes(), &reponse)
+	assert.Equal(t, true, reponse["verified"])
+}
+
+func TestUserHandler_VerifyEmail_IncorrectMissingUserId(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// путь и параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/verify-email?code=80744", nil)
+
+	handler.verifyEmail(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	var reponse map[string]string
+	json.Unmarshal(w.Body.Bytes(), &reponse)
+	assert.Equal(t, "userId parametr does not exist in path", reponse["reason"])
+}
+
+func TestUserHandler_VerifyEmail_IncorrectMissingEmailCode(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// путь и параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/verify-email", nil)
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "1"},
+	}
+
+	handler.verifyEmail(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	var reponse map[string]string
+	json.Unmarshal(w.Body.Bytes(), &reponse)
+	assert.Equal(t, "code parametr does not exist in query", reponse["reason"])
+}
+
+func TestUserHandler_VerifyEmail_IncorrectValidationCode(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// путь и параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/verify-email?code=8074", nil)
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "1"},
+	}
+
+	handler.verifyEmail(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	var reponse map[string]string
+	json.Unmarshal(w.Body.Bytes(), &reponse)
+	assert.Equal(t, "invalid code: does not match regexp", reponse["reason"])
+}
+
+func TestUserHandler_VerifyEmail_IncorrectUserId(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// путь и параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/verify-email?code=80744", nil)
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "Maxon"},
+	}
+
+	handler.verifyEmail(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	var reponse map[string]string
+	json.Unmarshal(w.Body.Bytes(), &reponse)
+	assert.Equal(t, "strconv.Atoi: parsing \"Maxon\": invalid syntax", reponse["reason"])
+}
+
+func TestUserHandler_VerifyEmail_IncorrectValidationUserId(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// путь и параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/verify-email?code=80744", nil)
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "0"},
+	}
+
+	handler.verifyEmail(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	var reponse map[string]string
+	json.Unmarshal(w.Body.Bytes(), &reponse)
+	assert.Equal(t, "invalid user id: can`t be less or equel 0", reponse["reason"])
+}
+
+func TestUserHandler_VerifyEmail_CorrectButInternalServerError(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// путь и параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/verify-email?code=80744", nil)
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "2"},
+	}
+
+	handler.verifyEmail(c)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Result().StatusCode)
+	var reponse map[string]string
+	json.Unmarshal(w.Body.Bytes(), &reponse)
+	assert.Equal(t, "внутренняя ошибка сервера", reponse["reason"])
+}
+
+func TestUserHandler_VerifyEmail_CorrectButNotFound(t *testing.T) {
+	// Создаем наш хэндлер (Собственно транспортный слой)
+	handler := &UserHandler{
+		service: NewMockService(),
+		log: slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		),
+		kafka: NewMockKafka(),
+	}
+
+	// формируем тестовый запрос
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// путь и параметр userId
+	c.Request, _ = http.NewRequest("PATCH", "/user/sign-up/1/verify-email?code=80744", nil)
+	c.Params = gin.Params{
+		gin.Param{Key: "userId", Value: "3"},
+	}
+
+	handler.verifyEmail(c)
+
+	assert.Equal(t, http.StatusNotFound, w.Result().StatusCode)
+	var reponse map[string]string
+	json.Unmarshal(w.Body.Bytes(), &reponse)
+	assert.Equal(t, repository.ErrNotFound.Error(), reponse["reason"])
 }

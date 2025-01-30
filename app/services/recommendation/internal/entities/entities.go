@@ -12,8 +12,8 @@ type ErrorResponse struct {
 
 func ValidateUserId(prId int) error {
 
-	if prId < 0 {
-		return errors.New("invalid user id: can`t be less 0")
+	if prId <= 0 {
+		return errors.New("invalid user id: can`t be less or equel 0")
 	}
 
 	return nil

@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"strings"
@@ -102,7 +101,7 @@ func ConnectToKafka(loger *slog.Logger) Producer {
 	p, err := NewProducer(addrs, loger)
 
 	if err != nil {
-		log.Fatal(fi + ":" + err.Error())
+		panic(fi + ":" + err.Error())
 	}
 
 	return p

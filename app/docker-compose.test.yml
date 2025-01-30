@@ -75,3 +75,75 @@ services:
       retries: 5
       start_period: 10s
     restart: always
+
+  recommendation-service-test:
+    container_name: recommendation-service-test
+    image: recommendation-service
+    build:
+      context: ./services/recommendation
+      dockerfile: local.Dockerfile
+    environment:
+      - CONFIG_DIR=./config
+      - CONFIG_FILE=local.yaml
+      - DB_HOST=recommendation-postgres-test
+      - DB_PASS=qwerty
+      - DB_USER=postgres
+      - DB_OPT_DC=disable
+      - DB_NAME=postgres
+      - DB_PORT=5432
+      - KAFKA_ADDRS=kafka-test:9092
+      - KAFKA_TOPIC=user_updates,product_updates
+      - REDIS_ADDR=redis-test:6379
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./services/recommendation:/usr/src/app
+    depends_on:
+      - recommendation-postgres-test
+      - kafka-test
+      - redis-test
+
+  recommendation-postgres-test:
+    container_name: recommendation-postgres-test
+    image: postgres:14.8-alpine3.18
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "qwerty"
+      PGSSLMODE: "disable"
+    volumes:
+      - ./services/recommendation/migration/000001_init.up.sql:/docker-entrypoint-initdb.d/initdb.sql
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+
+  redis-test:
+    image: redis:latest
+    container_name: redis-test
+    ports:
+      - "6380:6379"
+    volumes:
+      - ./redisdata:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "$REDIS_PASSWORD", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    tty: true
+    stdin_open: true

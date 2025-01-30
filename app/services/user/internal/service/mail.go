@@ -71,37 +71,38 @@ func makeConnection(m *Mail, toEmail string) (*smtp.Client, error) {
 	//создаем соединение с нужным smtp сервером
 	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:%s", m.Config.Host, m.Config.Port), tlsConfig)
 	if err != nil {
+		m.logMessage(fi, err.Error())
 		return nil, err
 	}
 
 	//создание smtp клиента
 	client, err := smtp.NewClient(conn, m.Config.Host)
 	if err != nil {
-
+		m.logMessage(fi, err.Error())
 		return nil, err
 	}
 
 	//аторизируем клиента
 	if err := client.Auth(auth); err != nil {
+		m.logMessage(fi, err.Error())
 		return nil, err
 	}
 
 	// **FROM**
 	if err := client.Mail(m.Config.Login); err != nil {
+		m.logMessage(fi, err.Error())
 		return nil, err
 	}
 
 	// 	**TO**
 	if err := client.Rcpt(toEmail); err != nil {
+		m.logMessage(fi, err.Error())
 		return nil, err
 	}
 
-	//для трейса
-	defer func(error) {
-		if err != nil {
-			m.log.Error(fi + ":" + err.Error())
-		}
-	}(err)
-
 	return client, nil
+}
+
+func (m *Mail) logMessage(fi string, message string) {
+	m.log.Error(fi + ":" + message)
 }

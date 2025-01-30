@@ -31,264 +31,238 @@ func NewHandler(service service.Service, log *slog.Logger, kafka kafka.Producer)
 func (h *UserHandler) signUpUser(c *gin.Context) {
 	var usrInfo entities.UserInfo
 	fi := "api.Handler.signUpUser"
-	errCode := 0
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
-	//400
+	//400 - ошибка десериализации данных
 	if err := c.BindJSON(&usrInfo); err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	//400
+	//400 - ошибка валидации данных
 	if err := usrInfo.ValidateUserInfo(); err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	id, err := h.service.CreateUser(ctx, &usrInfo)
-	//409 и 500
+
+	//409 и 500 - уже существует и внутренняя ошибка сервера
 	if errors.Is(err, repository.ErrAlreadyExists) {
-		errCode = http.StatusConflict
+		logMassage(fi, h.log, err.Error(), http.StatusConflict)
 		newErrorResponse(c, http.StatusConflict, err.Error())
 		return
 	} else if err != nil {
-		errCode = http.StatusInternalServerError
+		logMassage(fi, h.log, err.Error(), http.StatusInternalServerError)
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	//200
+	//200 - успешное завершение
 	c.AbortWithStatusJSON(http.StatusOK, map[string]int{
 		"userId": id,
 	})
 
 	usrInfo.UsrId = id
 	h.kafka.SendMessage(usrInfo)
-
-	defer func() {
-		if err != nil {
-			h.log.Debug(
-				fi + "TrasportLevelError Code : " + strconv.Itoa(errCode) + " " + err.Error(),
-			)
-		}
-	}()
-
 }
 
 func (h *UserHandler) getUserById(c *gin.Context) {
 	fi := "api.Handler.getUserById"
-	errCode := 0
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
-	//400
+	//400 - ошибка получения userId из Query
 	userIdstr, ok := c.GetQuery("userId")
 	if !ok {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, "missing userId param", http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, "userId parametr does not exist in path")
 		return
 
 	}
-	//400
+	//400 - ошибка - некорректный userId (не число)
 	userId, err := strconv.Atoi(userIdstr)
 	if err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	//400
+	//400 - ошибка валидации userId
 	if err := entities.ValidateUserId(userId); err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	//404 и 500
+	//404 и 500 - ошибка NotFound и InternalServerError
 	usr, err := h.service.GetUserById(ctx, userId)
 	if errors.Is(err, repository.ErrNotFound) {
-		errCode = http.StatusNotFound
+		logMassage(fi, h.log, err.Error(), http.StatusNotFound)
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return
 	} else if err != nil {
-		errCode = http.StatusInternalServerError
+		logMassage(fi, h.log, err.Error(), http.StatusInternalServerError)
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	//200
+	//200 - успешное завершение
 	c.AbortWithStatusJSON(http.StatusOK, usr)
-
-	defer func() {
-		if err != nil {
-			h.log.Debug(fi + "TrasportLevelError Code : " + strconv.Itoa(errCode) + " " + err.Error())
-		}
-	}()
 
 }
 
 func (h *UserHandler) getUserByEmail(c *gin.Context) {
 	fi := "api.Handler.getUserByEmail"
-	errCode := 0
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
-	//400
+	//400 - ошибка получения email из Query
 	email, ok := c.GetQuery("email")
 	if !ok {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, "missing email param", http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, "email parametr does not exist in path")
 		return
 
 	}
-	//400
+	//400 - ошибка валидации email
 	if err := entities.ValidateEmail(email); err != nil {
-		errCode = http.StatusBadRequest
-		newErrorResponse(c, http.StatusBadRequest, "email parametr does not exist in path"+err.Error())
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	//404 и 500
+	//404 и 500 - ошибка - пользователь не найден или внутренняя ошибка сервера
 	usr, err := h.service.GetUserByEmail(ctx, email)
 	if errors.Is(err, repository.ErrNotFound) {
-		errCode = http.StatusNotFound
+		logMassage(fi, h.log, err.Error(), http.StatusNotFound)
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return
 	} else if err != nil {
-		errCode = http.StatusInternalServerError
+		logMassage(fi, h.log, err.Error(), http.StatusInternalServerError)
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	//200
+	//200 - успешное завершение
 	c.AbortWithStatusJSON(http.StatusOK, usr)
-
-	defer func() {
-		if err != nil {
-			h.log.Debug(fi + "TrasportLevelError Code : " + strconv.Itoa(errCode) + " " + err.Error())
-		}
-	}()
 }
 
 func (h *UserHandler) editUser(c *gin.Context) {
 	var usrInfo entities.UserInfo
 	fi := "api.Handler.editUser"
-	errCode := 0
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
-	//400
+	//400 - нет параметра
 	userIdStr := c.Param("userId")
 	if userIdStr == "" {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, "missing userId Param", http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, "userId parametr does not exist in path")
 		return
 	}
-	//400
+	//400 - некорректный параметр (не число)
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	//400
+	//400 - параметр не прошел валидацию
 	if err := entities.ValidateUserId(userId); err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	//400
+	//400 - ошибка десериализация данных в структуру
 	if err := c.BindJSON(&usrInfo); err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	//404 и 500
+
+	//400 - валидация данных
+	if err := usrInfo.ValidateUserInfo(); err != nil {
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	usrInfo.UsrId = userId
+	//404 и 500 - ошибки NotFound и InternalServerError
 	if err := h.service.UpdateUser(ctx, userId, &usrInfo); errors.Is(err, repository.ErrNotFound) {
-		errCode = http.StatusNotFound
+		logMassage(fi, h.log, err.Error(), http.StatusNotFound)
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return
 	} else if err != nil {
-		errCode = http.StatusInternalServerError
+		logMassage(fi, h.log, err.Error(), http.StatusInternalServerError)
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	//200
+	//200 - успешное завершение
 	c.AbortWithStatusJSON(http.StatusOK, "OK")
 
 	h.kafka.SendMessage(usrInfo)
-
-	defer func() {
-		if err != nil {
-			h.log.Debug(fi + "TrasportLevelError Code : " + strconv.Itoa(errCode) + " " + err.Error())
-		}
-	}()
 }
 
 func (h *UserHandler) verifyEmail(c *gin.Context) {
 	userIdstr := c.Param("userId")
 	fi := "verifyEmail"
-	errCode := 0
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
-	//400
+	//400 - нет параметра UserId
 	if userIdstr == "" {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, "missing userId Param", http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, "userId parametr does not exist in path")
 		return
 	}
-	//400
+	//400 - некоректный параметр
 	userId, err := strconv.Atoi(userIdstr)
 	if err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 
 	}
-	//400
+	//400 - ошибка валидации параметра
 	if err := entities.ValidateUserId(userId); err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	//400
+	//400 - ошибка - код не не найден в Query
 	code := c.Query("code")
 	if code == "" {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, "missing email param", http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, "code parametr does not exist in query")
 		return
 	}
-	//400
+	//400 - ошибка валидации кода
 	if err := entities.ValidateCode(code); err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 
 	}
-	//404 и 500
+	//404 и 500 - ошибка - пользователь с таким userID не найдет или внутренняя ошибка сервера
 	verified, err := h.service.VerifyCode(ctx, userId, code)
 	if errors.Is(err, repository.ErrNotFound) {
-		errCode = http.StatusNotFound
+		logMassage(fi, h.log, err.Error(), http.StatusNotFound)
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return
 	} else if err != nil {
-		errCode = http.StatusInternalServerError
+		logMassage(fi, h.log, err.Error(), http.StatusInternalServerError)
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
-
 	}
-	//200
+	//200 - успешное завершение
 	c.AbortWithStatusJSON(http.StatusOK, map[string]interface{}{
 		"verified": verified,
 	})
+}
 
-	defer func() {
-		if err != nil {
-			h.log.Debug(fi + "TrasportLevelError Code : " + strconv.Itoa(errCode) + " " + err.Error())
-		}
-	}()
+func logMassage(fi string, log *slog.Logger, msg string, code int) {
+	log.Error("Transport Level Error: " + fi + ": " + msg + "   Code : " + strconv.Itoa(code))
 }

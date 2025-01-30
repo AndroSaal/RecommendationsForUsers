@@ -37,14 +37,14 @@ func (s *UserService) CreateUser(ctx context.Context, user *entities.UserInfo) (
 	// добавление кода и пользователя в таблицы бд
 	id, err := s.repo.AddNewUser(ctx, user, code)
 	if err != nil {
-		s.log.Debug("%s: Error adding new user: %v", fi, err)
+		s.log.Error("%s: Error adding new user: %v", fi, err)
 		return 0, err
 	}
 
 	// отправка письма - опциональная функция,
 	// если возникла ошибка - выполнение программы продолжится
 	if err := s.mail.SendMail(ctx, user.Email, code); err != nil {
-		s.log.Debug("%s: Error sending email: %v", fi, err)
+		s.log.Error("%s: Error sending email: %v", fi, err)
 	}
 
 	return id, nil
@@ -58,7 +58,7 @@ func (s *UserService) VerifyCode(ctx context.Context, userId int, code string) (
 	isVerified, err := s.repo.VerifyCode(ctx, userId, code)
 
 	if err != nil {
-		s.log.Debug(fmt.Sprintf("%s: %s", fi, err.Error()))
+		s.log.Error(fmt.Sprintf("%s: %s", fi, err.Error()))
 		return false, err
 	}
 
@@ -71,7 +71,7 @@ func (s *UserService) GetUserById(ctx context.Context, id int) (*entities.UserIn
 
 	user, err := s.repo.GetUserById(ctx, id)
 	if err != nil {
-		s.log.Debug(fmt.Sprintf("%s: %s", fi, err.Error()))
+		s.log.Error(fmt.Sprintf("%s: %s", fi, err.Error()))
 		return nil, err
 
 	}
@@ -84,7 +84,7 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*entiti
 
 	user, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
-		s.log.Debug(fmt.Sprintf("%s: %s", fi, err.Error()))
+		s.log.Error(fmt.Sprintf("%s: %s", fi, err.Error()))
 		return nil, err
 	}
 	return user, nil
@@ -95,7 +95,7 @@ func (s *UserService) UpdateUser(ctx context.Context, userId int, user *entities
 	fi := "internal.User.UpdateUser"
 
 	if err := s.repo.UpdateUser(ctx, userId, user); err != nil {
-		s.log.Debug(fmt.Sprintf("%s: %s", fi, err.Error()))
+		s.log.Error(fmt.Sprintf("%s: %s", fi, err.Error()))
 		return err
 
 	}

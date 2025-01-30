@@ -14,6 +14,19 @@ type Repository interface {
 	AddUserUpdate(ctx context.Context, user *myproto.UserUpdate) error
 }
 
+type KeyValueDatabse interface {
+	GetRecom(ctx context.Context, userId int) ([]int, error)
+	SetRecom(ctx context.Context, userId int, productIds []int) error
+	DelRecom(ctx context.Context, userId int) error
+	DelAll(ctx context.Context) error
+}
+
+type RelationalDataBase interface {
+	GetProductsByUserId(ctx context.Context, userId int) ([]int, error)
+	AddProductUpdate(ctx context.Context, product *myproto.ProductAction) error
+	AddUserUpdate(ctx context.Context, user *myproto.UserUpdate) error
+}
+
 // имплементация Repository интерфейса
 type RecomRepository struct {
 	relDB RelationalDataBase
@@ -22,7 +35,7 @@ type RecomRepository struct {
 }
 
 // слой репощитория - взаимодействие с Базами данных
-func NewProductRepository(db *PostgresDB, kvDB *RedisRepository, log *slog.Logger) *RecomRepository {
+func NewRecomRepository(db RelationalDataBase, kvDB KeyValueDatabse, log *slog.Logger) *RecomRepository {
 	return &RecomRepository{
 		relDB: db,
 		kvDB:  kvDB,

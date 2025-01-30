@@ -32,13 +32,16 @@ func NewConsumer(addrs []string, topics []string, log *slog.Logger) (*Consumer, 
 	}, nil
 }
 
-func (c *Consumer) Consume(handler service.KafkaHandler, ctx context.Context) {
+func (c *Consumer) Consume(handler service.KafkaHandler, ctx context.Context) error {
 	responseCh := make(chan *sarama.ConsumerMessage, 10)
 	defer close(responseCh)
-	//подписываемся на обновления первого топика
-	go ConsumeTopic(c, c.topics[0], ctx, responseCh)
-	//подписываемся на обновления второго топика
-	go ConsumeTopic(c, c.topics[1], ctx, responseCh)
+	//подписываемся на обновления топикоы
+	for _, elem := range c.topics {
+		go ConsumeTopic(c, elem, ctx, responseCh)
+	}
+	// go ConsumeTopic(c, c.topics[0], ctx, responseCh)
+	// //подписываемся на обновления второго топика
+	// go ConsumeTopic(c, c.topics[1], ctx, responseCh)
 	//обрабатываем ответы из топиков
 	for {
 		select {
@@ -47,15 +50,21 @@ func (c *Consumer) Consume(handler service.KafkaHandler, ctx context.Context) {
 				switch msg.Topic {
 				case "user_updates":
 					c.log.Info("Message about user_updates received from topic")
-					handler.AddUserData(ctx, msg)
+					if err := handler.AddUserData(ctx, msg); err != nil {
+						c.log.Error("Error adding user data", "err", err)
+						return err
+					}
 				case "product_updates":
 					c.log.Info("Message about product_updates received from topic")
-					handler.AddProductData(ctx, msg)
+					if err := handler.AddProductData(ctx, msg); err != nil {
+						c.log.Error("Error adding user data", "err", err)
+						return err
+					}
 				}
 			}
 		case <-ctx.Done():
 			c.log.Info("Closing all consumers by reason from server")
-			return
+			return nil
 		}
 	}
 
@@ -104,7 +113,7 @@ func ConnectToKafka(loger *slog.Logger) *Consumer {
 	c, err := NewConsumer(addrs, topics, loger)
 
 	if err != nil {
-		log.Fatal(fi + ":" + err.Error())
+		log.Panic(fi + ":" + err.Error())
 	}
 
 	return c

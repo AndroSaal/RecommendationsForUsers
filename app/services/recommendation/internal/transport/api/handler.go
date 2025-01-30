@@ -27,49 +27,55 @@ func NewHandler(service service.Service, log *slog.Logger) *Handler {
 
 func (h *Handler) getUserRecommendations(c *gin.Context) {
 	fi := "api.Handler.getUserRecommendations"
-	errCode := 0
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
-	userId, err := strconv.Atoi(c.Param("userId"))
+	// ошибка 400 - отсутсвие параметра userId
+	userID := c.Param("userId")
+	if userID == "" {
+		logMassage(fi, h.log, "userId parameter is empty in path", http.StatusBadRequest)
+		newErrorResponse(c, http.StatusBadRequest, "userId parameter is empty in path")
+		return
+	}
+
+	//ошибка 400 - Некорректный параметр userID
+	userId, err := strconv.Atoi(userID)
 	if err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, "userId parameter incorrect in path")
 		return
 	} else {
 		h.log.Info("%s: Get response for User with Id %d", fi, userId)
 	}
 
+	// ошибка 400 - ошибка валидации userId
 	if err := entities.ValidateUserId(userId); err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, "userId validation failed"+": "+err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, "userId validation failed"+": "+err.Error())
 		return
 	}
 
-	//404 и 500
+	//404 и 500 - рекомендаций нет или внутряняя ошибка сервера
 	productIds, err := h.service.GetRecommendations(ctx, userId)
 	if errors.Is(err, repository.ErrNotFound) {
-		errCode = http.StatusNotFound
+		logMassage(fi, h.log, err.Error(), http.StatusNotFound)
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return
 	} else if err != nil {
-		errCode = http.StatusInternalServerError
+		logMassage(fi, h.log, err.Error(), http.StatusInternalServerError)
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	} else if productIds == nil {
-		errCode = http.StatusNotFound
+		logMassage(fi, h.log, "recommendations for this user not found", http.StatusNotFound)
 		newErrorResponse(c, http.StatusNotFound, "recommendations for this user not found")
 		return
-
 	}
 
-	//200
+	// успешное завершение 200
 	c.AbortWithStatusJSON(http.StatusOK, productIds)
 
-	defer func() {
-		if err != nil {
-			h.log.Debug(fi + "TrasportLevelError Code : " + strconv.Itoa(errCode) + " " + err.Error())
-		}
-	}()
+}
 
+func logMassage(fi string, log *slog.Logger, msg string, code int) {
+	log.Error("Transport Level Error: " + fi + ": " + msg + "   Code : " + strconv.Itoa(code))
 }

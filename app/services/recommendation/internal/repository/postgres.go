@@ -12,12 +12,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type RelationalDataBase interface {
-	GetProductsByUserId(ctx context.Context, userId int) ([]int, error)
-	AddProductUpdate(ctx context.Context, product *myproto.ProductAction) error
-	AddUserUpdate(ctx context.Context, user *myproto.UserUpdate) error
-}
-
 // имплементация RelationalDataBase интерфейса
 type PostgresDB struct {
 	DB  *sqlx.DB

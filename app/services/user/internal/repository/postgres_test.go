@@ -271,6 +271,23 @@ func TestPostgresDB_VerifyCode_IncorrectCode(t *testing.T) {
 	assert.False(t, isVerified)
 }
 
+func TestPostgresDB_VerifyCode_CorrectCodeIncorrectUserId(t *testing.T) {
+	cfg := loadConf()
+
+	// коннект к бд (Маст)
+	dbConn := NewPostgresDB(cfg)
+	// закрываем коннект, выводим ошибку
+	defer func() {
+		if err := dbConn.DB.Close(); err != nil {
+			t.Error(errors.New("Ошибка закрытия БД" + err.Error()))
+		}
+	}()
+
+	isVerified, err := dbConn.VerifyCode(context.Background(), 100, "5436")
+	assert.Error(t, err)
+	assert.False(t, isVerified)
+}
+
 func TestPostgresDB_UpdateUser_Correct(t *testing.T) {
 	cfg := loadConf()
 
@@ -304,6 +321,33 @@ func TestPostgresDB_UpdateUser_Correct(t *testing.T) {
 	assert.Equal(t, user, userFromDB)
 }
 
+func TestPostgresDB_UpdateUser_IncorrectNoSuchUser(t *testing.T) {
+	cfg := loadConf()
+
+	// коннект к бд (Маст)
+	dbConn := NewPostgresDB(cfg)
+	// закрываем коннект, выводим ошибку
+	defer func() {
+		if err := dbConn.DB.Close(); err != nil {
+			t.Error(errors.New("Ошибка закрытия БД" + err.Error()))
+		}
+	}()
+
+	var user *entities.UserInfo = &entities.UserInfo{
+		Usrname:         "test",
+		Email:           "test_test@test.com",
+		Password:        "test",
+		UsrDesc:         "more test words test test",
+		UserInterests:   []entities.UserInterest{"test1", "test2"},
+		UsrAge:          16,
+		IsEmailVerified: true,
+	}
+
+	// Представим, что пользователь повзрослел на год и из интересов пропал test3
+	err1 := dbConn.UpdateUser(context.Background(), 100, user)
+	assert.Error(t, err1)
+}
+
 func TestPostgresDB_UpdateUser_IncorrectId(t *testing.T) {
 	cfg := loadConf()
 
@@ -330,5 +374,17 @@ func TestPostgresDB_UpdateUser_IncorrectId(t *testing.T) {
 
 	//проверем, что возвращается ошибка
 	assert.Error(t, err1)
+
+}
+
+func TestPostgresDB_NewPostgresDB_Incorrect(t *testing.T) {
+
+	defer func() {
+		r := recover()
+		assert.NotNil(t, r)
+	}()
+
+	dbConn := NewPostgresDB(config.DBConfig{})
+	defer dbConn.DB.Close()
 
 }

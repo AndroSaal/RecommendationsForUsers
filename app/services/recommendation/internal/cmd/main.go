@@ -42,7 +42,7 @@ func main() {
 	defer kvConn.KVDB.Close()
 
 	// слой репозитория
-	repository := repository.NewProductRepository(dbConn, kvConn, logger)
+	repository := repository.NewRecomRepository(dbConn, kvConn, logger)
 
 	// слой сервиса
 	service := service.NewRecommendationService(repository, logger)
@@ -55,7 +55,11 @@ func main() {
 
 	//коннект к кафке
 	kafkaConn := kafka.ConnectToKafka(logger)
-	go kafkaConn.Consume(service, ctxSig)
+	go func() {
+		if err := kafkaConn.Consume(service, ctxSig); err != nil {
+			logger.Error(err.Error())
+		}
+	}()
 
 	// Закрываем коннект
 	defer func() {

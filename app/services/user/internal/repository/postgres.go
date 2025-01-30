@@ -33,7 +33,7 @@ func NewPostgresDB(cfg config.DBConfig) *PostgresDB {
 		cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.Dbname, cfg.Sslmode))
 
 	if err != nil {
-		log.Fatalf("Error connecting to database: %v", err)
+		log.Panic("Error connecting to database: " + err.Error())
 	}
 	return &PostgresDB{
 		DB: DB,
@@ -269,9 +269,6 @@ func (p *PostgresDB) UpdateUser(ctx context.Context, userId int, user *entities.
 		user.Usrname, user.Email, user.Password, user.UsrDesc, user.UsrAge, userId,
 	); err != nil {
 		tgx.Rollback()
-		if err.(*pq.Error).Code == "23503" {
-			err = ErrNotFound
-		}
 		return err
 	}
 

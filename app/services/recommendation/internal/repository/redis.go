@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -10,13 +11,6 @@ import (
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/recommendation/pkg/config"
 	"github.com/go-redis/redis"
 )
-
-type KeyValueDatabse interface {
-	GetRecom(ctx context.Context, userId int) ([]int, error)
-	SetRecom(ctx context.Context, userId int, productIds []int) error
-	DelRecom(ctx context.Context, userId int) error
-	DelAll(ctx context.Context) error
-}
 
 type RedisRepository struct {
 	KVDB *redis.Client
@@ -33,7 +27,7 @@ func NewRedisDB(cfg *config.KeyValueConfig) *RedisRepository {
 func (r *RedisRepository) GetRecom(ctx context.Context, userId int) ([]int, error) {
 	userIdKey := strconv.Itoa(userId)
 	jsonData, err := r.KVDB.Get(userIdKey).Bytes()
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		return nil, nil
 	} else if err != nil {
 		return nil, fmt.Errorf("error getting product ids for user %d: %w", userId, err)

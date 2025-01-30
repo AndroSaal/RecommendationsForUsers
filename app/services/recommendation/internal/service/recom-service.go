@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/recommendation/internal/repository"
@@ -49,7 +50,9 @@ func (s *RecommendationService) AddProductData(ctx context.Context, msg *sarama.
 		return err
 	}
 
-	s.log.Info("%s: Got user id %d, user interests %v", fi, product.ProductId, product.ProductKeyWords)
+	s.log.Info(
+		fmt.Sprintf("%s: Got user id %d, user interests %v", fi, product.ProductId, product.ProductKeyWords),
+	)
 
 	//отправляем структуру в бд
 	if err := s.repo.AddProductUpdate(ctx, &product); err != nil {
@@ -71,10 +74,14 @@ func (s *RecommendationService) AddUserData(ctx context.Context, msg *sarama.Con
 		s.log.Error("%s: Error trying Unmarshal user data: %v", fi, err)
 		return err
 	} else {
-		s.log.Info("%s: Unmarshal user data: id: %d, Interests %v", fi, user.UserId, user.UserInterests)
+		s.log.Info(
+			fmt.Sprintf("%s: Unmarshal user data: id: %d, Interests %v", fi, user.UserId, user.UserInterests),
+		)
 	}
 
-	s.log.Info("%s: Got user id %d, user interests %v", fi, user.UserId, user.UserInterests)
+	s.log.Info(
+		fmt.Sprintf("%s: Got user id %d, user interests %v", fi, user.UserId, user.UserInterests),
+	)
 
 	//отправляем структуру в бд
 	if err := s.repo.AddUserUpdate(ctx, &user); err != nil {
