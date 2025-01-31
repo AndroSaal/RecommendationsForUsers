@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -44,7 +45,7 @@ func (p *PostgresDB) GetProductsByUserId(ctx context.Context, userId int) ([]int
 	rowCheck := trx.QueryRow(`SELECT id FROM users WHERE id = $1`, userId)
 	if err := rowCheck.Scan(&userId); err != nil {
 		trx.Rollback()
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			err = ErrNotFound
 		}
 		return nil, err
@@ -193,7 +194,7 @@ func addKeyWords(id int, trx *sql.Tx, kw []string, table string) error {
 		`DELETE FROM %s WHERE %s = $1`,
 		table, idToinsert,
 	)
-	if _, err := trx.Exec(query, id); err != nil {
+	if _, err := trx.Exec(query, id); err != nil || kw == nil || len(kw) == 0 {
 		return fmt.Errorf("%s: %s %v", fi, query, err)
 	}
 

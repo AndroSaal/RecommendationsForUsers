@@ -1,14 +1,17 @@
 CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY
+    id INTEGER PRIMARY KEY,
+    CHECK (id > 0)
 );
 
 CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY    
+    id INTEGER PRIMARY KEY,
+    CHECK (id > 0)
 );
 
 CREATE TABLE IF NOT EXISTS keyWords (
     id SERIAL PRIMARY KEY,
-    kw_name VARCHAR(255) NOT NULL
+    kw_name VARCHAR(255) NOT NULL,
+    CHECK (LENGTH(TRIM(kw_name)) > 0)
 );
 
 CREATE TABLE IF NOT EXISTS user_kw (
