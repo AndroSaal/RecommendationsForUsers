@@ -14,6 +14,11 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+type KafkaProducer interface {
+	SendMessage(prdInfo entities.ProductInfo, action string) error
+	Close() error
+}
+
 type Producer struct {
 	Producer sarama.SyncProducer
 	log      *slog.Logger
@@ -85,6 +90,19 @@ func (p *Producer) SendMessage(prdInfo entities.ProductInfo, action string) erro
 	return nil
 }
 
+func (p *Producer) Close() error {
+	fi := "transport.kafka.Producer.Close"
+
+	err := p.Producer.Close()
+	if err != nil {
+		p.log.Error("%s: Error closing producer: %v", fi, err)
+		return err
+	}
+
+	return nil
+
+}
+
 func ConnectToKafka(loger *slog.Logger) *Producer {
 	fi := "main.connectToKafka"
 
@@ -94,7 +112,7 @@ func ConnectToKafka(loger *slog.Logger) *Producer {
 	p, err := NewProducer(addrs, loger)
 
 	if err != nil {
-		log.Fatal(fi + ":" + err.Error())
+		log.Panic(fi + ":" + err.Error())
 	}
 
 	return p

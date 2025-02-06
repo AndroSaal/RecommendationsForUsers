@@ -25,13 +25,21 @@ func main() {
 
 	// коннект к бд (Маст)
 	dbConn := repository.NewPostgresDB(cfg.DBConf, logger)
-	defer dbConn.DB.Close()
+	defer func() {
+		if err := dbConn.DB.Close(); err != nil {
+			logger.Error(err.Error())
+		}
+	}()
 
 	kvConn := repository.NewRedisDB(&cfg.KVConf)
-	defer kvConn.KVDB.Close()
+	defer func() {
+		if err := kvConn.KVDB.Close(); err != nil {
+			logger.Error(err.Error())
+		}
+	}()
 
 	// слой репозитория
-	repository := repository.NewAnalyticsRepository(dbConn, logger, kvConn)
+	repository := repository.NewAnalyticsRepository(dbConn, kvConn, logger)
 
 	// слой сервиса
 	service := service.NewAnalyticsService(repository, logger)
@@ -44,8 +52,17 @@ func main() {
 
 	//коннект к кафке
 	kafkaConn := kafka.ConnectToKafka(logger)
-	kafkaConn.Consume(service, ctxSig)
-	defer kafkaConn.Consumer.Close()
+	go func() {
+		if err := kafkaConn.Consume(service, ctxSig); err != nil {
+			logger.Error(err.Error())
+		}
+	}()
+
+	defer func() {
+		if err := kafkaConn.Consumer.Close(); err != nil {
+			logger.Error(err.Error())
+		}
+	}()
 
 	// обработка остановки по таймауту
 	ctxTim, cancel := context.WithTimeout(context.Background(), cfg.SrvConf.Timeout)

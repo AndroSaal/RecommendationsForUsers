@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/AndroSaal/RecommendationsForUsers/app/services/product/internal/entities"
@@ -20,7 +21,7 @@ type Repository interface {
 }
 
 // слой репощитория - взаимодействие с Базами данных
-func NewProductRepository(db *PostgresDB, log *slog.Logger) *ProductRepository {
+func NewProductRepository(db RelationalDataBase, log *slog.Logger) *ProductRepository {
 	return &ProductRepository{
 		relDB: db,
 		log:   log,
@@ -30,14 +31,14 @@ func NewProductRepository(db *PostgresDB, log *slog.Logger) *ProductRepository {
 func (r *ProductRepository) AddNewProduct(ctx context.Context, productInfo *entities.ProductInfo) (int, error) {
 	fi := "repository.ProductRepository.AddNewProduct"
 
-	userId, err := r.relDB.AddNewProduct(ctx, productInfo)
+	productId, err := r.relDB.AddNewProduct(ctx, productInfo)
 	if err != nil {
 		r.log.Error(fi + ": " + err.Error())
 		return 0, err
 
 	}
-
-	return userId, nil
+	r.log.Info(fmt.Sprintf("%s: add new product with id %d", fi, productId))
+	return productId, nil
 }
 
 func (r *ProductRepository) UpdateProduct(ctx context.Context, productId int, productInfo *entities.ProductInfo) error {
@@ -48,7 +49,7 @@ func (r *ProductRepository) UpdateProduct(ctx context.Context, productId int, pr
 		r.log.Error(fi + ": " + err.Error())
 		return err
 	}
-
+	r.log.Info(fmt.Sprintf("%s: product with id %d updated", fi, productId))
 	return nil
 }
 
@@ -60,5 +61,6 @@ func (r *ProductRepository) DeleteProduct(ctx context.Context, productId int) er
 		r.log.Error(fi + ": " + err.Error())
 		return err
 	}
+	r.log.Info(fmt.Sprintf("%s: product with id %d deleted", fi, productId))
 	return nil
 }

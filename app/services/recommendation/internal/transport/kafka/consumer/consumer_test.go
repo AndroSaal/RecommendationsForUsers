@@ -25,7 +25,7 @@ func (m *MockTopicHandler) AddProductData(ctx context.Context, msg *sarama.Consu
 		return err
 	}
 
-	if product.ProductId == 2 {
+	if product.ProductId == 404 {
 		return errors.New("some error")
 	}
 	return nil
@@ -39,7 +39,7 @@ func (m *MockTopicHandler) AddUserData(ctx context.Context, msg *sarama.Consumer
 		return err
 	}
 
-	if user.UserId == 2 {
+	if user.UserId == 404 {
 		return errors.New("some error")
 	}
 	return nil
@@ -106,7 +106,7 @@ func TestKafka_Consume_Correct(t *testing.T) {
 		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 	)
 	//создаем продюсер, которым отправим сообщения в топики
-	producer := NewProducer(t, []string{"kafka-test:9092"}, []string{"user_updates", "product_updates"})
+	producer := NewProducer(t, []string{"kafka-test-recom:9093"}, []string{"user_updates", "product_updates"})
 	defer func() {
 		if err := producer.Close(); err != nil {
 			t.Error(err)
@@ -114,7 +114,7 @@ func TestKafka_Consume_Correct(t *testing.T) {
 	}()
 	//создаем тестируемый консьюмер
 	consumer, err := NewConsumer(
-		[]string{"kafka-test:9092"}, []string{"user_updates", "product_updates"}, logger,
+		[]string{"kafka-test-recom:9093"}, []string{"user_updates", "product_updates"}, logger,
 	)
 	defer func() {
 		if err := consumer.Consumer.Close(); err != nil {
@@ -169,7 +169,7 @@ func TestKafka_Consume_IncorrectProduct(t *testing.T) {
 		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 	)
 	//создаем продюсер, которым отправим сообщения в топики
-	producer := NewProducer(t, []string{"kafka-test:9092"}, []string{"product_updates"})
+	producer := NewProducer(t, []string{"kafka-test-recom:9093"}, []string{"product_updates"})
 	defer func() {
 		if err := producer.Close(); err != nil {
 			t.Error(err)
@@ -177,7 +177,7 @@ func TestKafka_Consume_IncorrectProduct(t *testing.T) {
 	}()
 	//создаем тестируемый консьюмер
 	consumer, err := NewConsumer(
-		[]string{"kafka-test:9092"}, []string{"product_updates"}, logger,
+		[]string{"kafka-test-recom:9093"}, []string{"product_updates"}, logger,
 	)
 	defer func() {
 		if err := consumer.Consumer.Close(); err != nil {
@@ -196,7 +196,7 @@ func TestKafka_Consume_IncorrectProduct(t *testing.T) {
 
 	//создаем и сериализуем сообщение для отправки
 	var product myproto.ProductAction = myproto.ProductAction{
-		ProductId: 2,
+		ProductId: 404,
 		Action:    "test",
 	}
 
@@ -220,7 +220,7 @@ func TestKafka_Consume_IncorrectUser(t *testing.T) {
 		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 	)
 	//создаем продюсер, которым отправим сообщения в топики
-	producer := NewProducer(t, []string{"kafka-test:9092"}, []string{"user_updates"})
+	producer := NewProducer(t, []string{"kafka-test-recom:9093"}, []string{"user_updates"})
 	defer func() {
 		if err := producer.Close(); err != nil {
 			t.Error(err)
@@ -228,7 +228,7 @@ func TestKafka_Consume_IncorrectUser(t *testing.T) {
 	}()
 	//создаем тестируемый консьюмер
 	consumer, err := NewConsumer(
-		[]string{"kafka-test:9092"}, []string{"user_updates"}, logger,
+		[]string{"kafka-test-recom:9093"}, []string{"user_updates"}, logger,
 	)
 	defer func() {
 		if err := consumer.Consumer.Close(); err != nil {
@@ -247,7 +247,7 @@ func TestKafka_Consume_IncorrectUser(t *testing.T) {
 
 	//создаем и сериализуем сообщение для отправки
 	var user myproto.UserUpdate = myproto.UserUpdate{
-		UserId:        2,
+		UserId:        404,
 		UserInterests: []string{"test"},
 	}
 

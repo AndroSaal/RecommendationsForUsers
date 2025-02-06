@@ -17,10 +17,10 @@ import (
 type Handler struct {
 	service service.Service
 	log     *slog.Logger
-	kafka   *kafka.Producer
+	kafka   kafka.KafkaProducer
 }
 
-func NewHandler(service service.Service, log *slog.Logger, kafka *kafka.Producer) *Handler {
+func NewHandler(service service.Service, log *slog.Logger, kafka kafka.KafkaProducer) *Handler {
 	return &Handler{
 		service: service,
 		log:     log,
@@ -31,19 +31,18 @@ func NewHandler(service service.Service, log *slog.Logger, kafka *kafka.Producer
 func (h *Handler) addNewProduct(c *gin.Context) {
 	var prdInfo entities.ProductInfo
 	fi := "api.Handler.addNewProduct"
-	errCode := 0
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
 	//400
 	if err := c.BindJSON(&prdInfo); err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	//400
 	if err := prdInfo.ValidateProductInfo(); err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -51,7 +50,16 @@ func (h *Handler) addNewProduct(c *gin.Context) {
 	id, err := h.service.CreateProduct(ctx, &prdInfo)
 	//500
 	if err != nil {
-		errCode = http.StatusInternalServerError
+		logMassage(fi, h.log, err.Error(), http.StatusInternalServerError)
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	//Отправка сообщения в кафку
+	action := "add"
+	prdInfo.ProductId = id
+	if err := h.kafka.SendMessage(prdInfo, action); err != nil {
+		logMassage(fi, h.log, err.Error(), http.StatusInternalServerError)
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -60,103 +68,86 @@ func (h *Handler) addNewProduct(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusOK, map[string]interface{}{
 		"productId": id,
 	})
-
-	//Отправка сообщения в кафку
-	action := "add"
-	prdInfo.ProductId = id
-	h.kafka.SendMessage(prdInfo, action)
-
-	defer func() {
-		if err != nil {
-			h.log.Debug(
-				fi + "TrasportLevelError Code : " + strconv.Itoa(errCode) + " " + err.Error(),
-			)
-		}
-	}()
-
 }
 
 func (h *Handler) updateProduct(c *gin.Context) {
 	var prdInfo entities.ProductInfo
 	fi := "api.Handler.updateProduct"
-	errCode := 0
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
 	//400
 	prdIdStr := c.Param("productId")
 	if prdIdStr == "" {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, "productId parametr does not exist in path", http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, "productId parametr does not exist in path")
 		return
 	}
 	//400
 	prdId, err := strconv.Atoi(prdIdStr)
 	if err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	//400
 	if err := entities.ValidateProductId(prdId); err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	//400
 	if err := c.BindJSON(&prdInfo); err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	//404 и 500
 	prdInfo.ProductId = prdId
 	if err := h.service.UpdateProduct(ctx, prdId, &prdInfo); errors.Is(err, repository.ErrNotFound) {
-		errCode = http.StatusNotFound
+		logMassage(fi, h.log, err.Error(), http.StatusNotFound)
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return
 	} else if err != nil {
-		errCode = http.StatusInternalServerError
+		logMassage(fi, h.log, err.Error(), http.StatusInternalServerError)
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	//200
-	c.AbortWithStatusJSON(http.StatusOK, "OK")
 
 	action := "update"
-	h.kafka.SendMessage(prdInfo, action)
+	if errk := h.kafka.SendMessage(prdInfo, action); errk != nil {
+		logMassage(fi, h.log, errk.Error(), http.StatusInternalServerError)
+		newErrorResponse(c, http.StatusInternalServerError, errk.Error())
+		return
+	}
 
-	defer func() {
-		if err != nil {
-			h.log.Debug(fi + "TrasportLevelError Code : " + strconv.Itoa(errCode) + " " + err.Error())
-		}
-	}()
+	//200
+	c.AbortWithStatusJSON(http.StatusOK, "OK")
 }
 
 func (h *Handler) deleteProduct(c *gin.Context) {
 	var prdInfo entities.ProductInfo
 	fi := "api.Handler.deleteProduct"
-	errCode := 0
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
 	//400
 	prdIdStr := c.Param("productId")
 	if prdIdStr == "" {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, "productId parametr does not exist in path", http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, "productId parametr does not exist in path")
 		return
 	}
 	//400
 	prdId, err := strconv.Atoi(prdIdStr)
 	if err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	//400
 	if err := entities.ValidateProductId(prdId); err != nil {
-		errCode = http.StatusBadRequest
+		logMassage(fi, h.log, err.Error(), http.StatusBadRequest)
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -164,24 +155,27 @@ func (h *Handler) deleteProduct(c *gin.Context) {
 	//404 и 500
 	prdInfo.ProductId = prdId
 	if err := h.service.DeleteProduct(ctx, prdId); errors.Is(err, repository.ErrNotFound) {
-		errCode = http.StatusNotFound
+		logMassage(fi, h.log, err.Error(), http.StatusNotFound)
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return
 	} else if err != nil {
-		errCode = http.StatusInternalServerError
+		logMassage(fi, h.log, err.Error(), http.StatusInternalServerError)
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	//200
-	c.AbortWithStatusJSON(http.StatusOK, "OK")
 
 	//подключчеить кафку - сообщение откатить
 	action := "delete"
-	h.kafka.SendMessage(prdInfo, action)
+	if errk := h.kafka.SendMessage(prdInfo, action); errk != nil {
+		logMassage(fi, h.log, errk.Error(), http.StatusInternalServerError)
+		newErrorResponse(c, http.StatusInternalServerError, errk.Error())
+		return
+	}
 
-	defer func() {
-		if err != nil {
-			h.log.Debug(fi + "TrasportLevelError Code : " + strconv.Itoa(errCode) + " " + err.Error())
-		}
-	}()
+	//200
+	c.AbortWithStatusJSON(http.StatusOK, "OK")
+}
+
+func logMassage(fi string, log *slog.Logger, msg string, code int) {
+	log.Error("Transport Level Error: " + fi + ": " + msg + "   Code : " + strconv.Itoa(code))
 }

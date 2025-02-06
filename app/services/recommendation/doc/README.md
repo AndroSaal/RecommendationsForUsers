@@ -21,3 +21,6 @@
 * Запрос рекомендации для пользователя
 `url`
 http://localhost:8082/recommendation/5
+
+###### Объем проделанной работы
+![cloc util](cloc.png)

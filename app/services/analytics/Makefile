@@ -37,3 +37,11 @@ migr_down:
 	migrate -path $(MIGRATIONSDIR) -database \
 	"$(DB_DRIVE)://$(DB_USER):$(DB_PASS)@$(DB_IP):$(DB_PORT)/$(DB_NAME)?$(DB_OPT)" \
 	-verbose down
+
+test:
+	rm -rf coverage.out
+	go test ./internal/service ./internal/repository \
+	./internal/transport/kafka/consumer -v -cover -coverprofile=coverage.out
+
+check_coverage:
+	go tool cover -html=coverage.out

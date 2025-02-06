@@ -33,15 +33,13 @@ func NewConsumer(addrs []string, topics []string, log *slog.Logger) (*Consumer, 
 }
 
 func (c *Consumer) Consume(handler service.KafkaHandler, ctx context.Context) error {
+	fi := "kafka.Consumer.Consume"
 	responseCh := make(chan *sarama.ConsumerMessage, 10)
 	defer close(responseCh)
 	//подписываемся на обновления топикоы
 	for _, elem := range c.topics {
 		go ConsumeTopic(c, elem, ctx, responseCh)
 	}
-	// go ConsumeTopic(c, c.topics[0], ctx, responseCh)
-	// //подписываемся на обновления второго топика
-	// go ConsumeTopic(c, c.topics[1], ctx, responseCh)
 	//обрабатываем ответы из топиков
 	for {
 		select {
@@ -49,13 +47,13 @@ func (c *Consumer) Consume(handler service.KafkaHandler, ctx context.Context) er
 			if ok {
 				switch msg.Topic {
 				case "user_updates":
-					c.log.Info("Message about user_updates received from topic")
+					c.log.Info(fi + ": " + "Message about user_updates received from topic")
 					if err := handler.AddUserData(ctx, msg); err != nil {
 						c.log.Error("Error adding user data", "err", err)
 						return err
 					}
 				case "product_updates":
-					c.log.Info("Message about product_updates received from topic")
+					c.log.Info(fi + ": " + "Message about product_updates received from topic")
 					if err := handler.AddProductData(ctx, msg); err != nil {
 						c.log.Error("Error adding user data", "err", err)
 						return err

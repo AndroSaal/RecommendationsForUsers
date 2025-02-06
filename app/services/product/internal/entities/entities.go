@@ -36,8 +36,8 @@ type ProductInfo struct {
 
 func ValidateProductId(prId int) error {
 
-	if prId < 0 {
-		return errors.New("invalid user id: can`t be less 0")
+	if prId <= 0 {
+		return errors.New("invalid user id: can`t be less or equal 0")
 	}
 
 	return nil
@@ -46,15 +46,16 @@ func ValidateProductId(prId int) error {
 func ValidateCategory(category string) error {
 	re := regexp.MustCompile(pattern)
 
-	if !re.MatchString(category) {
-		return fmt.Errorf("invalid category: %s does not match regexp", category)
-	}
 	if len(category) > categoryMaxLenth {
 		return errors.New("invalid category: too long, max length is " + strconv.Itoa(categoryMaxLenth))
 	}
 
 	if len(category) < categoryMinLenth {
 		return errors.New("invalid category: too short, min length is " + strconv.Itoa(categoryMinLenth))
+	}
+
+	if !re.MatchString(category) {
+		return fmt.Errorf("invalid category: %s does not match regexp", category)
 	}
 
 	return nil

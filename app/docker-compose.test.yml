@@ -1,9 +1,8 @@
 services:
-  zookeeper:
-    # conteiner_name: zookeeper
+  zookeeper-product-user:
     image: confluentinc/cp-zookeeper
-    hostname: zookeeper
-    container_name: zookeeper
+    hostname: zookeeper-product-user
+    container_name: zookeeper-product-user
     ports:
       - 2181:2181
     environment:
@@ -12,23 +11,85 @@ services:
       ZOOKEPER_SERVER_ID: 1
       ZOOKEEPER_INIT_ID: 3
       ZOOKEEPER_SYNC_LIMIT: 4
+
+  zookeeper-analytics:
+    image: confluentinc/cp-zookeeper
+    hostname: zookeeper-analytics
+    container_name: zookeeper-analytics
+    ports:
+      - 2182:2182
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2182
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEPER_SERVER_ID: 1
+      ZOOKEEPER_INIT_ID: 3
+      ZOOKEEPER_SYNC_LIMIT: 4
+
+  zookeeper-recom:
+    image: confluentinc/cp-zookeeper
+    hostname: zookeeper-recom
+    container_name: zookeeper-recom
+    ports:
+      - 2183:2183
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2183
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEPER_SERVER_ID: 1
+      ZOOKEEPER_INIT_ID: 3
+      ZOOKEEPER_SYNC_LIMIT: 4
   
-  kafka-test:
-    container_name: kafka-test
-    hostname: kafka-test
+  kafka-test-analytics:
+    container_name: kafka-test-analytics
+    hostname: kafka-test-analytics
     image: confluentinc/cp-kafka:latest
     ports:
       - 9091:9091
     links:
-      - zookeeper
+      - zookeeper-analytics
     depends_on:
-      - zookeeper
+      - zookeeper-analytics
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: "kafka-test"
-      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_ADVERTISED_HOST_NAME: "kafka-test-analytics"
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper-analytics:2182"
       KAFKA_BROKER_ID: 1
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-test:9092,PLAINTEXT_HOST://localhost:9091
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-test-analytics:9092,PLAINTEXT_HOST://localhost:9091
+      KAFKA_CREATE_TOPICS: "user_updates:4:2,product_updates:4:2"
+
+  kafka-test-product-user:
+    container_name: kafka-test-product-user
+    hostname: kafka-test-product-user
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - 9095:9095
+    links:
+      - zookeeper-product-user
+    depends_on:
+      - zookeeper-product-user
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: "kafka-test-product-user"
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper-product-user:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-test-product-user:9094,PLAINTEXT_HOST://localhost:9095
+      KAFKA_CREATE_TOPICS: "user_updates:4:2,product_updates:4:2"
+
+  kafka-test-recom:
+    container_name: kafka-test-recom
+    hostname: kafka-test-recom
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - 9094:9094
+    links:
+      - zookeeper-recom
+    depends_on:
+      - zookeeper-recom
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: "kafka-test-recom"
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper-recom:2183"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-test-recom:9093,PLAINTEXT_HOST://localhost:9094
       KAFKA_CREATE_TOPICS: "user_updates:4:2,product_updates:4:2"
 
   user-service-test:
@@ -46,7 +107,7 @@ services:
       - DB_OPT_DC=disable
       - DB_NAME=postgres
       - DB_PORT=5432
-      - KAFKA_ADDRS=kafka-test:9092
+      - KAFKA_ADDRS=kafka-test-product-user:9094
       - KAFKA_TOPIC=user_updates
     ports:
       - "8080:8080"
@@ -54,7 +115,7 @@ services:
       - ./services/user:/usr/src/app
     depends_on:
       - user-postgres-test
-      - kafka-test
+      - kafka-test-product-user
 
   user-postgres-test:
     container_name: user-postgres-test
@@ -91,7 +152,7 @@ services:
       - DB_OPT_DC=disable
       - DB_NAME=postgres
       - DB_PORT=5432
-      - KAFKA_ADDRS=kafka-test:9092
+      - KAFKA_ADDRS=kafka-test-recom:9093
       - KAFKA_TOPIC=user_updates,product_updates
       - REDIS_ADDR=redis-test:6379
     ports:
@@ -100,7 +161,7 @@ services:
       - ./services/recommendation:/usr/src/app
     depends_on:
       - recommendation-postgres-test
-      - kafka-test
+      - kafka-test-recom
       - redis-test
 
   recommendation-postgres-test:
@@ -147,3 +208,96 @@ services:
     restart: unless-stopped
     tty: true
     stdin_open: true
+
+  product-service-test:
+    container_name: product-service-test
+    image: product-service
+    build:
+      context: ./services/product
+
+      dockerfile: local.Dockerfile
+    environment:
+      - CONFIG_DIR=./config
+      - CONFIG_FILE=local.yaml
+      - DB_HOST=product-postgres-test
+      - DB_PASS=qwerty
+      - DB_USER=postgres
+      - DB_OPT_DC=disable
+      - DB_NAME=postgres
+      - DB_PORT=5432
+      - KAFKA_ADDRS=kafka-test-product-user:9094
+      - KAFKA_TOPIC=product_updates
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./services/product:/usr/src/app
+    depends_on:
+      - product-postgres-test
+      - kafka-test-product-user
+
+  product-postgres-test:
+    container_name: product-postgres-test
+    image: postgres:14.8-alpine3.18
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "qwerty"
+      PGSSLMODE: "disable"
+    volumes:
+      - ./services/product/migration/000001_init.up.sql:/docker-entrypoint-initdb.d/initdb.sql
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+
+  analytics-service-test:
+    container_name: analytics-service-test
+    image: analytics-service
+    build:
+      context: ./services/analytics
+      dockerfile: local.Dockerfile
+    environment:
+      - CONFIG_DIR=./config
+      - CONFIG_FILE=local.yaml
+      - DB_HOST=analytics-postgres-test
+      - DB_PASS=qwerty
+      - DB_USER=postgres
+      - DB_OPT_DC=disable
+      - DB_NAME=postgres
+      - DB_PORT=5432
+      - KAFKA_ADDRS=kafka-test-analytics:9092
+      - KAFKA_TOPIC=user_updates,product_updates
+      - REDIS_ADDR=redis-test:6379
+    ports:
+      - "8083:8080"
+    volumes:
+      - ./services/analytics:/usr/src/app
+    depends_on:
+      - analytics-postgres-test
+      - kafka-test-analytics
+      - redis-test
+
+  analytics-postgres-test:
+    container_name: analytics-postgres-test
+    image: postgres:14.8-alpine3.18
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "qwerty"
+      PGSSLMODE: "disable"
+    volumes:
+      - ./services/analytics/migration/000001_init.up.sql:/docker-entrypoint-initdb.d/initdb.sql
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always

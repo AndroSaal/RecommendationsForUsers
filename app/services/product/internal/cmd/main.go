@@ -30,8 +30,12 @@ func main() {
 	cfg := config.MustLoadConfig()
 
 	// коннект к бд (Маст)
-	dbConn := repository.NewPostgresDB(cfg.DBConf)
-	defer dbConn.DB.Close()
+	dbConn := repository.NewPostgresDB(cfg.DBConf, logger)
+	defer func() {
+		if err := dbConn.DB.Close(); err != nil {
+			logger.Error("main : " + err.Error())
+		}
+	}()
 
 	// слой репозитория
 	repository := repository.NewProductRepository(dbConn, logger)
@@ -41,7 +45,11 @@ func main() {
 
 	//коннект к кафке
 	kafkaConn := kafka.ConnectToKafka(logger)
-	defer kafkaConn.Producer.Close()
+	defer func() {
+		if err := kafkaConn.Producer.Close(); err != nil {
+			logger.Error("main : " + err.Error())
+		}
+	}()
 
 	// транспортный слой
 	handlers := api.NewHandler(service, logger, kafkaConn)

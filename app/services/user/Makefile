@@ -40,7 +40,8 @@ migr_down:
 
 test:
 	rm -rf coverage.out
-	go test ./internal/repository ./internal/transport/api ./internal/service ./internal/transport/kafka/producer -v -cover -coverprofile=coverage.out
+	go test ./internal/repository ./internal/transport/api ./internal/service \
+	./internal/transport/kafka/producer -v -cover -coverprofile=coverage.out
 
 check_coverage:
 	go tool cover -html=coverage.out

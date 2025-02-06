@@ -20,7 +20,7 @@ type AnalyticsRepository struct {
 }
 
 // слой репощитория - взаимодействие с Базами данных
-func NewAnalyticsRepository(db *PostgresDB, log *slog.Logger, kv *RedisRepository) *AnalyticsRepository {
+func NewAnalyticsRepository(db RelationalDataBase, kv KeyValueDatabse, log *slog.Logger) *AnalyticsRepository {
 	return &AnalyticsRepository{
 		relDB: db,
 		log:   log,
@@ -29,7 +29,7 @@ func NewAnalyticsRepository(db *PostgresDB, log *slog.Logger, kv *RedisRepositor
 }
 
 func (r *AnalyticsRepository) AddProductUpdate(ctx context.Context, product *myproto.ProductAction) error {
-	fi := "repository.RecomRepository.AddProductUpdate"
+	fi := "analytics.AnalyticsRepository.AddProductUpdate"
 
 	product.ProductKeyWords = removeDuplicates(product.ProductKeyWords)
 	timestamp, err := r.relDB.AddProductUpdate(ctx, product)
@@ -47,7 +47,7 @@ func (r *AnalyticsRepository) AddProductUpdate(ctx context.Context, product *myp
 }
 
 func (r *AnalyticsRepository) AddUserUpdate(ctx context.Context, user *myproto.UserUpdate) error {
-	fi := "repository.RecomRepository.AddUserUpdate"
+	fi := "analytics.AnalyticsRepository.AddUserUpdate"
 
 	user.UserInterests = removeDuplicates(user.UserInterests)
 	timestamp, err := r.relDB.AddUserUpdate(ctx, user)

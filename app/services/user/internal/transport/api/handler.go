@@ -60,13 +60,18 @@ func (h *UserHandler) signUpUser(c *gin.Context) {
 		return
 	}
 
+	usrInfo.UsrId = id
+	if err := h.kafka.SendMessage(usrInfo); err != nil {
+		logMassage(fi, h.log, err.Error(), http.StatusInternalServerError)
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	//200 - успешное завершение
 	c.AbortWithStatusJSON(http.StatusOK, map[string]int{
 		"userId": id,
 	})
 
-	usrInfo.UsrId = id
-	h.kafka.SendMessage(usrInfo)
 }
 
 func (h *UserHandler) getUserById(c *gin.Context) {
@@ -200,10 +205,15 @@ func (h *UserHandler) editUser(c *gin.Context) {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	if err := h.kafka.SendMessage(usrInfo); err != nil {
+		logMassage(fi, h.log, err.Error(), http.StatusInternalServerError)
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	//200 - успешное завершение
 	c.AbortWithStatusJSON(http.StatusOK, "OK")
-
-	h.kafka.SendMessage(usrInfo)
 }
 
 func (h *UserHandler) verifyEmail(c *gin.Context) {

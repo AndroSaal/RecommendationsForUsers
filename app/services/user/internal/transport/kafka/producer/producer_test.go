@@ -49,7 +49,7 @@ func TestKafka_ConnectToKafka_Incorrect(t *testing.T) {
 func TestKafka_TestSendMessage_Correct(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
-	if err := os.Setenv("KAFKA_ADDRS", "kafka-test:9092"); err != nil {
+	if err := os.Setenv("KAFKA_ADDRS", "kafka-test-product-user:9094"); err != nil {
 		t.Error(err)
 	}
 
@@ -74,10 +74,6 @@ func TestKafka_TestSendMessage_Correct(t *testing.T) {
 
 func TestKafka_SendMessage_Incorrect(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
-
-	// if err := os.Setenv("KAFKA_ADDRS", "kafka-test:9092"); err != nil {
-	// 	t.Error(err)
-	// }
 
 	if err := os.Setenv("KAFKA_TOPIC", ""); err != nil {
 		t.Error(err)
